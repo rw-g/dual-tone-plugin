@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#14171c;--muted:#6b7280;--line:#e6e8ec;--soft:#f1f3f6;--accent:#3b6df0;--accent-ink:#fff;--ok:#16a06a;--bad:#d6453d;--warn:#b57a00;--stage:#dfe3ea;--track:#dfe3ea;--shadow:0 1px 2px rgba(16,24,40,.06),0 6px 20px rgba(16,24,40,.10);--r:10px;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1013;--panel:#161a20;--ink:#e9ebef;--muted:#8d97a6;--line:#262b34;--soft:#1d222a;--accent:#6b95ff;--accent-ink:#0b1020;--ok:#3ccb87;--bad:#ff6b61;--warn:#f0b429;--stage:#1b1f27;--track:#303744;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45);color-scheme:dark}}
+:root[data-theme=dark]{--bg:#0e1013;--panel:#161a20;--ink:#e9ebef;--muted:#8d97a6;--line:#262b34;--soft:#1d222a;--accent:#6b95ff;--accent-ink:#0b1020;--ok:#3ccb87;--bad:#ff6b61;--warn:#f0b429;--stage:#1b1f27;--track:#303744;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45);color-scheme:dark}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--bg);color:var(--ink);font:13px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#app{display:grid;grid-template-columns:1fr 336px;height:100%;transition:grid-template-columns .2s}#app.nopanel{grid-template-columns:1fr 0}#app.nopanel aside{visibility:hidden}
+@media(max-width:820px){#app,#app.nopanel{grid-template-columns:1fr;grid-template-rows:52% 48%}#app.nopanel{grid-template-rows:1fr 0}}
+#stage{position:relative;background:var(--stage);min-height:0;min-width:0;overflow:hidden;background-image:linear-gradient(45deg,rgba(128,128,128,.10) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.10) 75%),linear-gradient(45deg,rgba(128,128,128,.10) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.10) 75%);background-size:20px 20px;background-position:0 0,10px 10px}
+#view{display:block;width:100%;height:100%;touch-action:none;cursor:grab}#view.drag{cursor:grabbing}#view.split{cursor:col-resize}
+.bar{position:absolute;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}.bar>*{pointer-events:auto}#bar-l{left:12px;top:12px;right:96px}#view.crop{cursor:crosshair}#bar-r{right:12px;top:12px}
+.grp{display:flex;align-items:center;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:3px;box-shadow:var(--shadow)}
+button{font:inherit;color:var(--ink);background:none;border:0;border-radius:7px;min-height:28px;padding:0 9px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s}
+button:hover{background:var(--soft)}button:active{transform:translateY(.5px)}button.on,button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}button:disabled{opacity:.45;cursor:default}
+button.ic{width:30px;padding:0;justify-content:center}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.sep{width:1px;height:18px;background:var(--line);margin:0 3px}
+#msg{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);max-width:min(560px,calc(100% - 24px));background:var(--ink);color:var(--bg);border-radius:999px;padding:7px 14px;font-size:12px;box-shadow:var(--shadow);pointer-events:none;transition:opacity .2s;font-variant-numeric:tabular-nums}#msg.err{background:var(--bad);color:#fff}#msg[hidden]{display:block;opacity:0}
+#drop{position:absolute;inset:12px;border:2px dashed var(--accent);border-radius:14px;background:color-mix(in srgb,var(--accent) 10%,transparent);display:none;align-items:center;justify-content:center;font-weight:600;color:var(--accent);pointer-events:none}#stage.over #drop{display:flex}
+#empty{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;color:var(--muted);pointer-events:none}#empty[hidden]{display:none}
+aside{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;min-width:0}
+#head{padding:14px 16px 10px;border-bottom:1px solid var(--line)}h1{font-size:14px;font-weight:650;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sub{color:var(--muted);font-size:12px;margin-top:1px}
+#chips{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}.chip{display:inline-flex;align-items:center;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600;background:var(--soft);color:var(--muted)}.chip.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}.chip.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+#scroll{flex:1;overflow:auto;padding:4px 0}
+details.sec{border-bottom:1px solid var(--line)}details.sec>summary{list-style:none;cursor:pointer;padding:11px 16px;font-size:11px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;justify-content:space-between;user-select:none}
+details.sec>summary::-webkit-details-marker{display:none}details.sec>summary::after{content:"";width:6px;height:6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg);transition:transform .15s}details.sec[open]>summary::after{transform:rotate(45deg)}
+.body{padding:0 16px 14px;display:grid;gap:10px}
+select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--soft);color:var(--ink);font:inherit}select{height:30px;padding:0 8px}textarea{padding:7px 9px;resize:vertical;min-height:84px}
+.ctl{display:grid;grid-template-columns:92px 1fr 62px;gap:8px;align-items:center}.ctl>label{color:var(--muted)}.ctl.sel{grid-template-columns:92px 1fr}
+input[type=number]{width:100%;height:26px;padding:0 6px;border:1px solid var(--line);border-radius:7px;background:var(--soft);color:var(--ink);font:inherit;font-variant-numeric:tabular-nums;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--p),var(--track) var(--p))}input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--p),var(--track) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--panel);border:2px solid var(--accent);margin-top:-5px;box-shadow:0 1px 3px rgba(0,0,0,.25)}input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--panel);border:2px solid var(--accent)}
+.check{display:flex;align-items:center;gap:8px;cursor:pointer}.check input{accent-color:var(--accent);margin:0}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.row.sp{justify-content:space-between}.note{color:var(--muted);font-size:12px}.note.warn{color:var(--warn)}
+.seg{display:flex;background:var(--soft);border-radius:8px;padding:2px;gap:2px}.seg button{flex:1;justify-content:center;color:var(--muted)}.seg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(16,24,40,.12)}
+.ghost{border:1px solid var(--line)}.ghost:hover{border-color:var(--accent)}
+.gh{font-size:11px;color:var(--muted);font-weight:600;margin:6px 0 -2px}
+#presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pre{width:100%;min-width:0;overflow:hidden;align-self:start;display:grid;gap:3px;padding:4px;border:1px solid var(--line);border-radius:8px;background:var(--soft);text-align:left;min-height:0;height:auto;align-items:stretch}.pre canvas{width:100%;aspect-ratio:4/3;border-radius:5px;display:block;background:#fff}.pre span{font-size:11px;line-height:1.15;color:var(--ink);padding:0 2px 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pre.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+#foot{padding:12px 16px;border-top:1px solid var(--line);display:grid;gap:8px;background:var(--panel)}
+.primary{background:var(--accent);color:var(--accent-ink);justify-content:center;min-height:34px;font-weight:600}.primary:hover{background:var(--accent);filter:brightness(1.08)}.secondary{justify-content:center;min-height:34px;border:1px solid var(--line);font-weight:550}
+#tip{position:fixed;z-index:60;max-width:260px;background:var(--ink);color:var(--bg);font-size:12px;line-height:1.35;padding:6px 9px;border-radius:7px;box-shadow:var(--shadow);pointer-events:none;opacity:0;transition:opacity .12s}#tip.show{opacity:1}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);padding:0;width:min(520px,calc(100% - 24px));box-shadow:var(--shadow)}dialog::backdrop{background:rgba(0,0,0,.45)}dialog .in{padding:18px;display:grid;gap:12px}dialog h2{margin:0;font-size:15px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-open" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+<symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+<symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+<symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></symbol>
+<symbol id="i-fliph" viewBox="0 0 24 24"><path d="M12 3v18M8 7L3 12l5 5zM16 7l5 5-5 5z"/></symbol>
+<symbol id="i-flipv" viewBox="0 0 24 24"><path d="M3 12h18M7 8l5-5 5 5zM7 16l5 5 5-5z"/></symbol>
+<symbol id="i-rot" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></symbol>
+<symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h9a6 6 0 0 1 0 12h-3"/></symbol>
+<symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9h-9a6 6 0 0 0 0 12h3"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></symbol>
+</defs></svg>
+<div id="app">
+  <div id="stage">
+    <canvas id="view" aria-label="Halftone preview"></canvas>
+    <div id="empty" hidden><svg class="i" style="width:36px;height:36px"><use href="#i-open"/></svg><div>Drop an image here, paste one, or press Open</div></div>
+    <div id="drop">Drop to load image</div>
+    <div class="bar" id="bar-l">
+      <div class="grp">
+        <button id="open" data-tip="Open an image (or drop / paste one onto the page)."><svg class="i"><use href="#i-open"/></svg>Open</button>
+        <input type="file" id="file" accept="image/*" hidden>
+      </div>
+      <div class="grp" role="toolbar" aria-label="History">
+        <button class="ic" id="undo" data-tip="Undo the last settings change (Ctrl/Cmd+Z)" aria-label="Undo" disabled><svg class="i"><use href="#i-undo"/></svg></button>
+        <button class="ic" id="redo" data-tip="Redo (Ctrl/Cmd+Shift+Z)" aria-label="Redo" disabled><svg class="i"><use href="#i-redo"/></svg></button>
+        <button class="ic" id="link" data-tip="Copy a link that restores these settings (use it with the same image)." aria-label="Copy settings link"><svg class="i"><use href="#i-link"/></svg></button>
+      </div>
+      <div class="grp" role="toolbar" aria-label="Image">
+        <button class="ic" id="flipx" data-tip="Flip left-right" aria-label="Flip horizontally"><svg class="i"><use href="#i-fliph"/></svg></button>
+        <button class="ic" id="flipy" data-tip="Flip top-bottom" aria-label="Flip vertically"><svg class="i"><use href="#i-flipv"/></svg></button>
+        <button class="ic" id="rotcw" data-tip="Rotate 90° clockwise" aria-label="Rotate"><svg class="i"><use href="#i-rot"/></svg></button>
+        <button class="ic" id="cropbtn" data-tip="Crop: drag a rectangle on the image to keep only that part (Esc cancels)." aria-label="Crop" aria-pressed="false"><svg class="i"><use href="#i-crop"/></svg></button>
+        <button id="imgreset" data-tip="Undo all crop / flip / rotate">Reset image</button>
+      </div>
+      <div class="grp" role="toolbar" aria-label="Compare">
+        <button data-cmp="split" class="on" data-tip="Split view: drag the divider to compare original and halftone. (1)">Split</button>
+        <button data-cmp="ht" data-tip="Halftone only. (2)">Halftone</button>
+        <button data-cmp="orig" data-tip="Original only. (3)">Original</button>
+      </div>
+      <div class="grp" role="toolbar" aria-label="Zoom">
+        <button class="ic" id="zout" data-tip="Zoom out (-)" aria-label="Zoom out"><svg class="i"><use href="#i-minus"/></svg></button>
+        <button id="zfit" data-tip="Fit to window (0). Double-click the image also fits.">Fit</button>
+        <button id="z100" data-tip="Actual pixels, 100% (9)">100%</button>
+        <button class="ic" id="zin" data-tip="Zoom in (+). Mouse wheel zooms at the cursor; drag to pan." aria-label="Zoom in"><svg class="i"><use href="#i-plus"/></svg></button>
+      </div>
+    </div>
+    <div class="bar" id="bar-r"><div class="grp">
+      <button class="ic" id="theme" data-tip="Switch light / dark theme" aria-label="Theme"><svg class="i"><use href="#i-sun"/></svg></button>
+      <button class="ic" id="panelbtn" data-tip="Show / hide the side panel (H)" aria-label="Toggle panel"><svg class="i"><use href="#i-panel"/></svg></button>
+    </div></div>
+    <div id="msg" hidden></div>
+  </div>
+  <aside>
+    <div id="head"><h1 id="ttl">Halftone</h1><div class="sub" id="sub"></div><div id="chips"></div></div>
+    <div id="scroll">
+      <details class="sec" open><summary>Presets</summary><div class="body" id="presets"></div></details>
+      <details class="sec" open><summary>Tone</summary><div class="body">
+        <div class="ctl" data-tip="Lighten or darken the whole image before halftoning."><label for="brightness">Brightness</label><input id="brightness" type="range" min="-1" max="1" step="0.01" value="0" data-def="0"><input id="brightnessn" type="number" min="-1" max="1" step="0.01" value="0"></div>
+        <div class="ctl" data-tip="Spread tones apart (positive) or squeeze them together (negative). Halftones usually like a little extra contrast."><label for="contrast">Contrast</label><input id="contrast" type="range" min="-100" max="100" step="1" value="0" data-def="0"><input id="contrastn" type="number" min="-100" max="100" step="1" value="0"></div>
+        <div class="ctl" data-tip="Midtone brightness. Above 1 lightens midtones, below 1 darkens them."><label for="gamma">Gamma</label><input id="gamma" type="range" min="0.2" max="3" step="0.01" value="1" data-def="1"><input id="gamman" type="number" min="0.2" max="3" step="0.01" value="1"></div>
+        <div class="ctl" data-tip="Blur radius in pixels. Smooths noise and tiny detail so dots stay clean."><label for="blur">Smooth</label><input id="blur" type="range" min="0" max="12" step="1" value="0" data-def="0"><input id="blurn" type="number" min="0" max="12" step="1" value="0"></div>
+        <div class="ctl" data-tip="Unsharp mask: boosts edges so features survive the loss of tone."><label for="sharpen">Sharpen</label><input id="sharpen" type="range" min="0" max="3" step="0.05" value="0" data-def="0"><input id="sharpenn" type="number" min="0" max="3" step="0.05" value="0"></div>
+        <label class="check" data-tip="Auto-levels: stretch the lightest and darkest 0.5% of the image to pure white and black. Helps flat, hazy photos."><input type="checkbox" id="normalize">Auto-levels</label>
+        <div class="ctl" data-tip="Black point: tones at or below this level become black."><label for="bp">Black point</label><input id="bp" type="range" min="0" max="0.9" step="0.01" value="0" data-def="0"><input id="bpn" type="number" min="0" max="0.9" step="0.01" value="0"></div>
+        <div class="ctl" data-tip="White point: tones at or above this level become white."><label for="wp">White point</label><input id="wp" type="range" min="0.1" max="1" step="0.01" value="1" data-def="1"><input id="wpn" type="number" min="0.1" max="1" step="0.01" value="1"></div>
+        <div class="ctl" data-tip="Wave: repeat the tone ramp so shades band like contour lines (sawtooth restarts, triangle mirrors). Repeat count on the right."><label for="wave">Wave</label><select id="wave" style="grid-column:2"><option value="none">None</option><option value="saw">Sawtooth</option><option value="tri">Triangle</option></select><input id="waveN" type="number" min="1" max="12" step="1" value="3"></div>
+        <label class="check" data-tip="Swap light and dark before halftoning (negative image)."><input type="checkbox" id="invert">Invert tones</label>
+        <label class="check" data-tip="Dither in linear light so the share of ink matches how bright the area looks. Often lightens midtones."><input type="checkbox" id="linear">Linear-light</label>
+      </div></details>
+      <details class="sec" open><summary>Method</summary><div class="body">
+        <select id="method" aria-label="Method"></select>
+        <div id="mparams" class="body" style="padding:0"></div>
+      </div></details>
+      <details class="sec" open><summary>Output</summary><div class="body">
+        <div class="ctl" data-tip="Width of the black-and-white image in pixels (height follows the aspect ratio). 600-1200 px suits most 3D textures."><label for="width">Width px</label><input id="width" type="range" min="128" max="2048" step="8" value="800" data-def="800"><input id="widthn" type="number" min="64" max="4096" step="8" value="800"></div>
+        <label class="check" data-tip="Swap black and white in the result (ink becomes paper)."><input type="checkbox" id="outinv">Invert result</label>
+      </div></details>
+      <details class="sec"><summary>Original request</summary><div class="body"><textarea id="prompt" spellcheck="false" aria-label="Original request" data-tip="The request that started this. It is sent with the image when you press Apply."></textarea></div></details>
+    </div>
+    <div id="foot">
+      <button class="primary" id="apply" data-tip="Send this black-and-white image with your original request to the 3D skill, which applies it to the model and opens the 3D viewer."><svg class="i"><use href="#i-cube"/></svg>Apply to 3D model</button>
+      <div class="row"><select id="escale" aria-label="Export scale" style="width:64px" data-tip="Export size: repeats every pixel 1 to 4 times so edges stay sharp when the PNG is placed on a large face."><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select><button class="secondary" id="dl" style="flex:1" data-tip="Download the result as a 1-bit black-and-white PNG."><svg class="i"><use href="#i-down"/></svg>Download PNG</button><button class="ghost secondary" id="reset" data-tip="Reset all controls to the current preset."><svg class="i"><use href="#i-reset"/></svg></button></div>
+    </div>
+  </aside>
+</div>
+<dialog id="dlg"><div class="in"><h2>Apply to 3D model</h2><div class="note" id="dlgnote"></div><textarea id="dlgprompt" spellcheck="false" aria-label="Prompt to send"></textarea>
+  <div class="row sp"><button class="ghost secondary" id="dlgcopy">Copy prompt</button><button class="ghost secondary" id="dlgdl">Download PNG again</button><button class="primary" id="dlgclose" style="padding:0 18px">Done</button></div></div></dialog>
+<div id="tip" role="tooltip"></div>
+<script>__ENGINE__</script>
+<script>
+(function () {
+'use strict';
+var E = window.HalftoneEngine, PRESETS = __PRESETS__, META = __META__, IMAGE = "__IMAGE__";
+var $ = function (s) { return document.querySelector(s); };
+var UI = {
+  am: { label: 'Halftone screen (dots / lines)', params: [
+    { k: 'grid', l: 'Grid', type: 'select', opts: E.GRIDS, def: 'square', rebuild: true, tip: 'Where the marks sit. Square and hex are lattices at an angle; radial puts dots on concentric rings (sunburst); ring makes continuous concentric lines.' },
+    { k: 'cell', l: 'Cell size', min: 2, max: 40, step: 0.5, def: 6, tip: 'Distance between dot centres in output pixels. Bigger cells = coarser, more visible dots.' },
+    { k: 'angle', l: 'Angle', min: -90, max: 90, step: 1, def: 45, tip: 'Screen angle in degrees. 45 is the classic print angle; 0 gives rows and columns.' },
+    { k: 'shape', l: 'Shape', type: 'select', opts: E.SHAPES, def: 'round', when: function (p) { return p.grid !== 'ring'; }, tip: 'Dot shape. Line gives engraving-style lines whose thickness follows tone.' },
+    { k: 'cx', l: 'Centre X', min: 0, max: 1, step: 0.01, def: 0.5, when: function (p) { return p.grid === 'radial' || p.grid === 'ring'; }, tip: 'Horizontal centre of the rings (0 = left edge, 1 = right edge).' },
+    { k: 'cy', l: 'Centre Y', min: 0, max: 1, step: 0.01, def: 0.5, when: function (p) { return p.grid === 'radial' || p.grid === 'ring'; }, tip: 'Vertical centre of the rings (0 = top, 1 = bottom).' },
+    { k: 'centre', l: 'Cell sampling', type: 'check', def: true, text: 'Sample at cell centre', tip: 'On: each dot takes one tone from the middle of its cell (clean print look). Off: tone is read per pixel (more detail, rougher edges).' },
+    { k: 'response', l: 'Tone curve', min: 0.3, max: 2.5, step: 0.01, def: 1, tip: 'How quickly dots grow with darkness. Above 1 keeps highlights lighter, below 1 makes midtones heavier.' },
+    { k: 'offset', l: 'Dot gain', min: -0.3, max: 0.3, step: 0.01, def: 0, tip: 'Make every dot a little bigger (positive) or smaller (negative). Compensates for ink spread.' },
+    { k: 'warp', l: 'Warp', min: 0, max: 2, step: 0.05, def: 0, rebuild: true, tip: 'Wobble the screen with smooth noise for a hand-drawn, wavy look. 0 = straight.' },
+    { k: 'warpScale', l: 'Warp scale', min: 1, max: 20, step: 0.5, def: 4, when: function (p) { return p.warp > 0; }, tip: 'Size of the wobbles in cells. Small = tight ripples, large = slow waves.' }] },
+  stipple: { label: 'Stipple (Poisson dots)', params: [
+    { k: 'spacingMin', l: 'Dark spacing', min: 1.5, max: 20, step: 0.5, def: 4, tip: 'Distance between dots in the darkest areas, in pixels. Smaller = denser.' },
+    { k: 'spacingMax', l: 'Light spacing', min: 3, max: 40, step: 0.5, def: 12, tip: 'Distance between dots in the lightest areas, in pixels.' },
+    { k: 'dot', l: 'Dot size', min: 0.3, max: 3, step: 0.05, def: 1, tip: 'Dot size multiplier.' },
+    { k: 'sizeByTone', l: 'Dot sizing', type: 'check', def: true, text: 'Size dots by tone', tip: 'On: dots grow in dark areas and shrink in light ones. Off: all dots equal (pure density stippling, lighter overall).' },
+    { k: 'relax', l: 'Relax', min: 0, max: 10, step: 1, def: 2, tip: 'Even-out passes that nudge crowded dots apart.' },
+    { k: 'seed', l: 'Seed', min: 1, max: 999, step: 1, def: 1, tip: 'Different seeds give different dot arrangements.' }] },
+  diffusion: { label: 'Error diffusion', params: [
+    { k: 'kernel', l: 'Kernel', type: 'select', opts: Object.keys(E.KERNELS), def: 'floyd', tip: 'How the rounding error is spread to neighbours. Floyd-Steinberg: balanced. Atkinson: crisp, high contrast. Stucki / Jarvis: smoother, slower. Sierra Lite: fast.' },
+    { k: 'serpentine', l: 'Scan', type: 'check', def: true, text: 'Serpentine scan', tip: 'Alternate scan direction each row to avoid diagonal streaks.' },
+    { k: 'amount', l: 'Diffusion', min: 0, max: 1, step: 0.01, def: 1, tip: 'How much of the error is passed on. Lower values add contrast and reduce noise.' },
+    { k: 'threshold', l: 'Threshold', min: 0, max: 1, step: 0.01, def: 0.5, tip: 'Brightness level that becomes white.' }] },
+  riemersma: { label: 'Riemersma (Hilbert curve)', params: [
+    { k: 'history', l: 'History', min: 2, max: 64, step: 1, def: 16, tip: 'How many previous pixels along the Hilbert curve share their error.' },
+    { k: 'amount', l: 'Diffusion', min: 0, max: 1, step: 0.01, def: 1 }, { k: 'threshold', l: 'Threshold', min: 0, max: 1, step: 0.01, def: 0.5 }] },
+  bayer: { label: 'Ordered (Bayer matrix)', params: [{ k: 'size', l: 'Matrix', type: 'select', opts: [2, 4, 8, 16], def: 4, tip: 'Bigger matrices give more tone levels and a finer crosshatch pattern.' }] },
+  blue: { label: 'Blue-noise grain', params: [] },
+  ign: { label: 'Gradient noise', params: [] },
+  white: { label: 'Random noise', params: [{ k: 'seed', l: 'Seed', min: 1, max: 999, step: 1, def: 1 }] },
+  threshold: { label: 'Hard threshold', params: [{ k: 'threshold', l: 'Threshold', min: 0, max: 1, step: 0.01, def: 0.5, tip: 'Brightness level that becomes white. Best for logos and line art.' }] }
+};
+var TONE_KEYS = ['brightness', 'contrast', 'gamma', 'blur', 'sharpen', 'bp', 'wp'];
+var S = { method: 'am', params: {}, preset: null, cmp: 'split', split: 0.5, zoom: 1, ox: 0, oy: 0, W: 0, H: 0, srcImg: null, lum: null, color: null, bits: null, thumbs: {} };
+
+var say = (function () { var t = 0; return function (m, err) { var e = $('#msg'); e.textContent = m; e.className = err ? 'err' : ''; e.hidden = !m; clearTimeout(t); if (m && !err) t = setTimeout(function () { e.hidden = true; }, 3000); }; })();
+function paintRange(r) { var mn = +r.min || 0, mx = +r.max || 100; r.style.setProperty('--p', Math.max(0, Math.min(100, (+r.value - mn) / (mx - mn) * 100)) + '%'); }
+var paintAll = function () { document.querySelectorAll('input[type=range]').forEach(paintRange); };
+
+// ---- source image -> work-size lum + colour canvases
+function loadImage(src, name) {
+  var im = new Image(); im.onload = function () {
+    var maxSide = 4096, sc = Math.min(1, maxSide / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * sc); c.height = Math.round(im.naturalHeight * sc);
+    var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);   // flatten alpha onto white
+    S.orig = c; S.ops = []; S.srcImg = c; S.name = name || 'image'; $('#empty').hidden = true; classify(c); setWidth(Math.min(+META.width || 800, c.width), true);
+    $('#ttl').textContent = S.name; var pend0 = S.pendingSnap; S.pendingSnap = null; if (pend0) { try { applySnapshot(pend0); } catch (e) { /* bad link */ } }
+    makeThumbs(); schedule(); fit(); hist.undo = []; hist.redo = []; hist.cur = snapshot(); setUR();
+  };
+  im.onerror = function () { say('Could not read that image.', true); }; im.src = src;
+}
+function buildSrc() {                                                                    // replay crop / flip / rotate operations on the original
+  var c = S.orig;
+  S.ops.forEach(function (op) {
+    var n = document.createElement('canvas'), g;
+    if (op.t === 'crop') { var r = op.r; n.width = Math.max(1, r[2]); n.height = Math.max(1, r[3]); g = n.getContext('2d'); g.drawImage(c, r[0], r[1], r[2], r[3], 0, 0, r[2], r[3]); }
+    else if (op.t === 'rot') { n.width = c.height; n.height = c.width; g = n.getContext('2d'); g.translate(n.width, 0); g.rotate(Math.PI / 2); g.drawImage(c, 0, 0); }
+    else { n.width = c.width; n.height = c.height; g = n.getContext('2d'); if (op.t === 'flipx') { g.translate(n.width, 0); g.scale(-1, 1); } else { g.translate(0, n.height); g.scale(1, -1); } g.drawImage(c, 0, 0); }
+    c = n;
+  });
+  return c;
+}
+function setOps(ops) { if (!S.orig) return; S.ops = ops; S.srcImg = buildSrc(); setWidth(S.W); makeThumbs(); schedule(); fit(); }
+function classify(c) {
+  var s = document.createElement('canvas'), k = Math.min(1, 160 / Math.max(c.width, c.height)); s.width = Math.max(1, Math.round(c.width * k)); s.height = Math.max(1, Math.round(c.height * k));
+  var g = s.getContext('2d'); g.drawImage(c, 0, 0, s.width, s.height); var d = g.getImageData(0, 0, s.width, s.height).data, n = s.width * s.height, gray = 0, bw = 0, i, bins = {};
+  for (i = 0; i < n; i++) { var r = d[4 * i], gg = d[4 * i + 1], b = d[4 * i + 2], sp = Math.max(r, gg, b) - Math.min(r, gg, b), m = (r + gg + b) / 3; if (sp <= 12) gray++; if (sp <= 12 && (m <= 12 || m >= 243)) bw++; var key = (r >> 4) * 256 + (gg >> 4) * 16 + (b >> 4); bins[key] = (bins[key] || 0) + 1; }
+  var counts = Object.keys(bins).map(function (q) { return bins[q]; }).sort(function (a, b) { return b - a; }), acc = 0, dom = 0; for (i = 0; i < counts.length && acc < 0.95 * n; i++) { acc += counts[i]; dom++; }
+  var mode = bw / n >= 0.995 ? 'binary' : gray / n >= 0.99 ? 'grayscale' : 'color', kind = mode === 'binary' ? 'binary' : dom <= 6 ? 'flat' : 'continuous';
+  S.info = { mode: mode, kind: kind }; var ch = $('#chips'); ch.innerHTML = ''; [mode === 'binary' ? 'already black & white' : mode, kind === 'flat' ? 'flat / line art' : kind === 'continuous' ? 'continuous tone' : ''].filter(Boolean).forEach(function (t, j) { var e = document.createElement('span'); e.className = 'chip' + (j === 0 && mode !== 'binary' ? ' warn' : ''); e.textContent = t; ch.appendChild(e); });
+  $('#sub').textContent = c.width + ' × ' + c.height + ' px';
+}
+function setWidth(w, quiet) { w = Math.max(64, Math.min(4096, Math.round(w))); $('#width').value = $('#widthn').value = w; paintRange($('#width')); S.W = w; S.H = Math.max(1, Math.round(S.srcImg.height * w / S.srcImg.width)); S.lum = null; }
+function ensureWork() {
+  if (S.lum && S.lum.w === S.W) return; var c = document.createElement('canvas'); c.width = S.W; c.height = S.H; var g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(S.srcImg, 0, 0, S.W, S.H);
+  var d = g.getImageData(0, 0, S.W, S.H).data, lum = new Float32Array(S.W * S.H); for (var i = 0; i < lum.length; i++) lum[i] = (0.2126 * d[4 * i] + 0.7152 * d[4 * i + 1] + 0.0722 * d[4 * i + 2]) / 255;
+  S.lum = { w: S.W, data: lum }; S.color = c;
+}
+function toneOpts() { var o = {}; TONE_KEYS.forEach(function (k) { o[k] = +$('#' + k).value; }); o.invert = $('#invert').checked; o.linear = $('#linear').checked; o.normalize = $('#normalize').checked; var w = $('#wave').value; o.wave = w === 'none' ? null : w; o.waveN = +$('#waveN').value || 1; return o; }
+function render() {
+  if (!S.srcImg) return; ensureWork(); var t0 = performance.now(), tone = E.prepare(S.lum.data, S.W, S.H, toneOpts()), bits = E.halftone(S.method, S.params, tone, S.W, S.H);
+  if ($('#outinv').checked) for (var i = 0; i < bits.length; i++) bits[i] = 1 - bits[i];
+  S.bits = bits; var c = S.ht || (S.ht = document.createElement('canvas')); c.width = S.W; c.height = S.H; var g = c.getContext('2d'), id = g.createImageData(S.W, S.H), d = id.data;
+  var ink = 0; for (var j = 0; j < bits.length; j++) { var v = bits[j] ? 255 : 0; d[4 * j] = d[4 * j + 1] = d[4 * j + 2] = v; d[4 * j + 3] = 255; if (!bits[j]) ink++; } g.putImageData(id, 0, 0);
+  S.ink = ink / bits.length; S.ms = Math.round(performance.now() - t0); draw();
+}
+var pend = 0; function schedule() { commitSoon(); cancelAnimationFrame(pend); pend = requestAnimationFrame(function () { try { render(); } catch (e) { say('Halftone failed: ' + e.message, true); } }); }
+
+// ---- view
+var cv = $('#view'), ctx = cv.getContext('2d');
+function size() { var r = cv.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2); cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.max(1, Math.round(r.height * d)); S.dpr = d; S.vw = r.width; S.vh = r.height; draw(); }
+function fit() { if (!S.srcImg) return; var pad = 90; S.zoom = Math.min((S.vw - 24) / S.W, (S.vh - pad) / S.H, 8); S.ox = (S.vw - S.W * S.zoom) / 2; S.oy = (S.vh - S.H * S.zoom) / 2 + 18; draw(); }
+function zoomAt(f, cx, cy) { var z = Math.max(0.05, Math.min(32, S.zoom * f)); cx = cx == null ? S.vw / 2 : cx; cy = cy == null ? S.vh / 2 : cy; S.ox = cx - (cx - S.ox) * z / S.zoom; S.oy = cy - (cy - S.oy) * z / S.zoom; S.zoom = z; draw(); }
+function draw() {
+  if (!ctx || !S.vw) return; ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0); ctx.clearRect(0, 0, S.vw, S.vh); if (!S.srcImg || !S.ht) return;
+  var x = S.ox, y = S.oy, w = S.W * S.zoom, h = S.H * S.zoom; ctx.imageSmoothingEnabled = S.zoom < 1; ctx.imageSmoothingQuality = 'high';
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 18; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h); ctx.restore();
+  if (S.cmp === 'orig') ctx.drawImage(S.color, x, y, w, h);
+  else if (S.cmp === 'ht') ctx.drawImage(S.ht, x, y, w, h);
+  else { var sx = x + w * S.split; ctx.drawImage(S.color, x, y, w, h); ctx.save(); ctx.beginPath(); ctx.rect(sx, y, x + w - sx, h); ctx.clip(); ctx.drawImage(S.ht, x, y, w, h); ctx.restore();
+    ctx.fillStyle = '#fff'; ctx.fillRect(sx - 1, y, 2, h); ctx.beginPath(); ctx.arc(sx, y + h / 2, 11, 0, 7); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.stroke(); ctx.fillStyle = '#334'; ctx.font = '12px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('⇆', sx, y + h / 2 + 0.5); }
+  if (S.cropRect) { var q = S.cropRect; ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.rect(0, 0, S.vw, S.vh); ctx.rect(q[0], q[1], q[2], q[3]); ctx.fill('evenodd'); ctx.strokeStyle = '#fff'; ctx.setLineDash([6, 4]); ctx.strokeRect(q[0], q[1], q[2], q[3]); ctx.restore(); }
+  status();
+}
+function status() { $('#sub').textContent = S.W + ' × ' + S.H + ' px · ink ' + Math.round(S.ink * 100) + '%'; }
+var drag = null;
+cv.addEventListener('pointerdown', function (e) { if (!S.srcImg) return; if (S.cropOn) { var cr = cv.getBoundingClientRect(); S.cropDrag = { x: e.clientX - cr.left, y: e.clientY - cr.top }; S.cropRect = null; cv.setPointerCapture(e.pointerId); return; } var r = cv.getBoundingClientRect(), px = e.clientX - r.left, sx = S.ox + S.W * S.zoom * S.split; drag = { x: e.clientX, y: e.clientY, ox: S.ox, oy: S.oy, split: S.cmp === 'split' && Math.abs(px - sx) < 14 }; cv.setPointerCapture(e.pointerId); cv.classList.add(drag.split ? 'split' : 'drag'); });
+cv.addEventListener('pointermove', function (e) { var r = cv.getBoundingClientRect(); if (S.cropDrag) { var qx = e.clientX - r.left, qy = e.clientY - r.top; S.cropRect = [Math.min(S.cropDrag.x, qx), Math.min(S.cropDrag.y, qy), Math.abs(qx - S.cropDrag.x), Math.abs(qy - S.cropDrag.y)]; draw(); return; } if (!drag) { cv.classList.toggle('split', S.cmp === 'split' && S.srcImg && Math.abs(e.clientX - r.left - (S.ox + S.W * S.zoom * S.split)) < 14); return; }
+  if (drag.split) { S.split = Math.max(0, Math.min(1, (e.clientX - r.left - S.ox) / (S.W * S.zoom))); } else { S.ox = drag.ox + e.clientX - drag.x; S.oy = drag.oy + e.clientY - drag.y; } draw(); });
+cv.addEventListener('pointerup', function () { drag = null; cv.classList.remove('drag', 'split'); if (S.cropDrag) { S.cropDrag = null; var q = S.cropRect; if (q && q[2] > 4 && q[3] > 4) { var f = S.srcImg.width / (S.W * S.zoom), x0 = Math.max(0, Math.round((q[0] - S.ox) * f)), y0 = Math.max(0, Math.round((q[1] - S.oy) * f)), x1 = Math.min(S.srcImg.width, Math.round((q[0] + q[2] - S.ox) * f)), y1 = Math.min(S.srcImg.height, Math.round((q[1] + q[3] - S.oy) * f)); setCrop(false); if (x1 - x0 >= 8 && y1 - y0 >= 8) pushOp({ t: 'crop', r: [x0, y0, x1 - x0, y1 - y0] }); else say('That crop is too small.'); } else setCrop(true); } });
+cv.addEventListener('wheel', function (e) { e.preventDefault(); var r = cv.getBoundingClientRect(); zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+cv.addEventListener('dblclick', fit);
+new ResizeObserver(size).observe($('#stage'));
+
+// ---- presets + method UI
+function methodSelect() { var m = $('#method'); Object.keys(UI).forEach(function (k) { var o = document.createElement('option'); o.value = k; o.textContent = UI[k].label; m.appendChild(o); }); m.onchange = function () { S.method = m.value; S.params = defaults(S.method); S.preset = null; buildParams(); markPreset(); schedule(); }; }
+function defaults(method) { var p = {}; UI[method].params.forEach(function (d) { if (d.def !== undefined) p[d.k] = d.def; }); return p; }
+function buildParams() {
+  var box = $('#mparams'); box.innerHTML = ''; $('#method').value = S.method;
+  UI[S.method].params.forEach(function (d) {
+    if (d.when && !d.when(S.params)) return; var val = S.params[d.k] === undefined ? d.def : S.params[d.k];
+    var row = document.createElement('div'); if (d.tip) row.setAttribute('data-tip', d.tip);
+    var changed = function () { S.preset = null; markPreset(); if (d.rebuild) buildParams(); schedule(); };
+    if (d.type === 'select') { row.className = 'ctl sel'; row.innerHTML = '<label>' + d.l + '</label><select></select>'; var sel = row.querySelector('select'); d.opts.forEach(function (o) { var op = document.createElement('option'); op.value = o; op.textContent = o; sel.appendChild(op); }); sel.value = val; sel.onchange = function () { S.params[d.k] = isNaN(+sel.value) ? sel.value : +sel.value; changed(); }; }
+    else if (d.type === 'check') { row.innerHTML = '<label class="check"><input type="checkbox">' + (d.text || d.l) + '</label>'; var cb = row.querySelector('input'); cb.checked = val !== false; cb.onchange = function () { S.params[d.k] = cb.checked; changed(); }; }
+    else { row.className = 'ctl'; row.innerHTML = '<label>' + d.l + '</label><input type="range" min="' + d.min + '" max="' + d.max + '" step="' + d.step + '"><input type="number" min="' + d.min + '" max="' + d.max + '" step="' + d.step + '">'; var r = row.querySelector('input[type=range]'), n = row.querySelector('input[type=number]'); r.value = n.value = val; paintRange(r);
+      var set = function (v) { if (!isFinite(v)) return; S.params[d.k] = v; r.value = n.value = v; paintRange(r); changed(); }; r.oninput = function () { set(+r.value); }; n.oninput = function () { set(+n.value); }; r.ondblclick = function () { set(d.def); }; }
+    box.appendChild(row);
+  });
+}
+function applyPreset(p, quiet) {
+  S.method = p.method; S.params = JSON.parse(JSON.stringify(p.params)); S.preset = p.id; var t = p.tone || {};
+  TONE_KEYS.forEach(function (k) { var def = +$('#' + k).dataset.def; setTone(k, t[k] !== undefined ? t[k] : def); }); $('#invert').checked = !!t.invert; $('#linear').checked = !!t.linear; $('#normalize').checked = !!t.normalize; $('#wave').value = t.wave || 'none'; $('#waveN').value = t.waveN || 3;
+  buildParams(); markPreset(); paintAll(); if (!quiet) schedule();
+}
+function setTone(k, v) { $('#' + k).value = $('#' + k + 'n').value = v; paintRange($('#' + k)); }
+function markPreset() { document.querySelectorAll('.pre').forEach(function (b) { b.classList.toggle('on', b.dataset.id === S.preset); }); }
+function buildPresets() {
+  var box = $('#presets'), last = '';
+  PRESETS.forEach(function (p) {
+    if (p.group !== last) { last = p.group; var h = document.createElement('div'); h.className = 'gh'; h.style.gridColumn = '1/-1'; h.textContent = p.group; box.appendChild(h); }
+    var b = document.createElement('button'); b.className = 'pre'; b.dataset.id = p.id; b.setAttribute('data-tip', p.name); b.innerHTML = '<canvas width="192" height="144"></canvas><span>' + p.name + '</span>'; b.onclick = function () { applyPreset(p); }; box.appendChild(b);
+  });
+}
+function makeThumbs() {                                                                  // previews of every preset on the current image, computed near real size then smoothed down
+  if (!S.srcImg) return; var gen = S.thumbGen = (S.thumbGen || 0) + 1, tw = Math.min(S.W, 560), th = Math.max(1, Math.round(S.srcImg.height * tw / S.srcImg.width)), k = tw / S.W;
+  var src = document.createElement('canvas'); src.width = tw; src.height = th; var g = src.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(S.srcImg, 0, 0, tw, th);
+  var d = g.getImageData(0, 0, tw, th).data, lum = new Float32Array(tw * th); for (var i = 0; i < lum.length; i++) lum[i] = (0.2126 * d[4 * i] + 0.7152 * d[4 * i + 1] + 0.0722 * d[4 * i + 2]) / 255;
+  var tmp = document.createElement('canvas'); tmp.width = tw; tmp.height = th; var tg = tmp.getContext('2d'), q = PRESETS.slice();
+  var run = function () {
+    var p = q.shift(); if (!p || gen !== S.thumbGen) return; var cvs = document.querySelector('.pre[data-id="' + p.id + '"] canvas');
+    if (cvs) { var pr = JSON.parse(JSON.stringify(p.params)); if (pr.cell) pr.cell = Math.max(2, pr.cell * k);
+      var tone = E.prepare(lum, tw, th, p.tone || {}), bits = E.halftone(p.method, pr, tone, tw, th), im = tg.createImageData(tw, th);
+      for (var j = 0; j < bits.length; j++) { var v = bits[j] ? 255 : 0; im.data[4 * j] = im.data[4 * j + 1] = im.data[4 * j + 2] = v; im.data[4 * j + 3] = 255; } tg.putImageData(im, 0, 0);
+      var c = cvs.getContext('2d'), W = cvs.width, H = cvs.height, ar = tw / th, sw = tw, sh = th, sx = 0, sy = 0; if (ar > W / H) { sw = th * W / H; sx = (tw - sw) / 2; } else { sh = tw * H / W; sy = (th - sh) / 2; }
+      c.imageSmoothingQuality = 'high'; c.drawImage(tmp, sx, sy, sw, sh, 0, 0, W, H); }
+    setTimeout(run, 0);
+  };
+  setTimeout(run, 30);
+}
+// ---- history (undo / redo) and shareable settings link
+var hist = { undo: [], redo: [], cur: '', t: 0 };
+function snapshot() { return JSON.stringify({ m: S.method, p: S.params, pr: S.preset, t: toneOpts(), w: S.W, oi: $('#outinv').checked, es: $('#escale').value, ops: S.ops }); }
+function setUR() { $('#undo').disabled = !hist.undo.length; $('#redo').disabled = !hist.redo.length; }
+function writeHash() { try { history.replaceState(null, '', '#s=' + encodeURIComponent(btoa(unescape(encodeURIComponent(hist.cur))))); return true; } catch (e) { return false; } }
+function commitNow() { clearTimeout(hist.t); if (S.restoring || !S.srcImg) return; var n = snapshot(); if (n !== hist.cur) { if (hist.cur) hist.undo.push(hist.cur); if (hist.undo.length > 60) hist.undo.shift(); hist.redo.length = 0; hist.cur = n; setUR(); writeHash(); } }
+function commitSoon() { if (S.restoring || !S.srcImg) return; clearTimeout(hist.t); hist.t = setTimeout(commitNow, 350); }
+function applySnapshot(str) {
+  var o = JSON.parse(str); S.restoring = true; S.method = o.m; S.params = o.p; S.preset = o.pr; var t = o.t || {};
+  TONE_KEYS.forEach(function (k) { if (t[k] !== undefined) setTone(k, t[k]); }); $('#invert').checked = !!t.invert; $('#linear').checked = !!t.linear; $('#normalize').checked = !!t.normalize; $('#wave').value = t.wave || 'none'; $('#waveN').value = t.waveN || 3; $('#outinv').checked = !!o.oi; $('#escale').value = o.es || '1';
+  if (S.orig && JSON.stringify(o.ops || []) !== JSON.stringify(S.ops)) { S.ops = o.ops || []; S.srcImg = buildSrc(); }
+  if (S.srcImg) setWidth(o.w || S.W); buildParams(); markPreset(); paintAll(); schedule(); if (S.srcImg) fit(); S.restoring = false;
+}
+function undo() { if (!hist.undo.length) return; hist.redo.push(hist.cur); hist.cur = hist.undo.pop(); applySnapshot(hist.cur); setUR(); writeHash(); }
+function redo() { if (!hist.redo.length) return; hist.undo.push(hist.cur); hist.cur = hist.redo.pop(); applySnapshot(hist.cur); setUR(); writeHash(); }
+
+// ---- export: 1-bit grayscale PNG (black 0 / white 1)
+var CRC = (function () { var t = new Uint32Array(256); for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { var c = 0xFFFFFFFF; for (var i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function chunk(type, data) { var out = new Uint8Array(12 + data.length), dv = new DataView(out.buffer); dv.setUint32(0, data.length); for (var i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i); out.set(data, 8); dv.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length))); return out; }
+async function png1bit(bits, w, h) {
+  var rb = (w + 7) >> 3, raw = new Uint8Array((rb + 1) * h); for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) if (bits[y * w + x]) raw[y * (rb + 1) + 1 + (x >> 3)] |= 0x80 >> (x & 7);
+  var z; if (typeof CompressionStream !== 'undefined') { var cs = new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate')); z = new Uint8Array(await new Response(cs).arrayBuffer()); } else return null;
+  var ih = new Uint8Array(13), dv = new DataView(ih.buffer); dv.setUint32(0, w); dv.setUint32(4, h); ih[8] = 1; ih[9] = 0; var parts = [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ih), chunk('IDAT', z), chunk('IEND', new Uint8Array(0))], len = parts.reduce(function (a, p) { return a + p.length; }, 0), out = new Uint8Array(len), o = 0; parts.forEach(function (p) { out.set(p, o); o += p.length; });
+  return new Blob([out], { type: 'image/png' });
+}
+function exportScale() { var k = +$('#escale').value || 1; return Math.max(1, Math.min(k, Math.floor(8192 / Math.max(S.W, S.H)))); }
+function scaleBits(bits, w, h, k) { if (k === 1) return bits; var W = w * k, out = new Uint8Array(W * h * k); for (var y = 0; y < h * k; y++) { var sy = (y / k) | 0; for (var x = 0; x < W; x++) out[y * W + x] = bits[sy * w + ((x / k) | 0)]; } return out; }
+async function makePng() {
+  if (!S.bits) throw new Error('no image'); var k = exportScale(), b = await png1bit(scaleBits(S.bits, S.W, S.H, k), S.W * k, S.H * k); if (b) return b;
+  var c = document.createElement('canvas'); c.width = S.W * k; c.height = S.H * k; var g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(S.ht, 0, 0, c.width, c.height); return await new Promise(function (res) { c.toBlob(res, 'image/png'); });
+}
+function outName() { return (S.name || 'image').replace(/\.[^.]+$/, '') + '_halftone.png'; }
+function save(blob, name) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000); }
+$('#dl').onclick = async function () { try { save(await makePng(), outName()); say('Saved ' + outName()); } catch (e) { say('Download failed: ' + e.message, true); } };
+
+// ---- apply: hand the black-and-white image and the original request to the 3D skill
+function presetLabel() { var p = PRESETS.filter(function (q) { return q.id === S.preset; })[0]; return (p ? p.name : 'custom') + ' (' + S.method + ' ' + JSON.stringify(S.params) + ')'; }
+function handoffPrompt(extra) {
+  var req = ($('#prompt').value || '').trim();
+  return 'Apply the halftoned image ' + outName() + ' (attached; ' + S.W * exportScale() + '×' + S.H * exportScale() + ' px, pure black/white, 1-bit) to the 3D model.' + (extra || '') + '\nUse it exactly as is: do not re-threshold, smooth or resample it, and do not run the halftone step again.\n' +
+    'Original request: ' + (req ? '"' + req + '"' : '(none given: ask what to do with it)') + '\n' +
+    'Use the dual-tone-apply skill: run apply_texture.py with this PNG as the texture (box projection over the entire part, no feature recognition), which writes the 3MF and opens the 3D editor. Keep the reply short: say what was applied and link the files; do not list checks, tests or counts.\nHalftone settings: ' + presetLabel() + '.';
+}
+async function applyToModel() {
+  if (!S.bits) return; var blob; try { blob = await makePng(); } catch (e) { say('Could not build the PNG: ' + e.message, true); return; }
+  if (window.name === 'dt-halftone') { window.parent.postMessage({ dtApply: true, png: blob, name: outName() }, '*'); return; }       // Dual-Tone Studio: hand the PNG to the 3D editor in the parent page
+  var prompt = handoffPrompt(''), sent = '';
+  try {
+    if (window.openai && typeof window.openai.sendFollowUpMessage === 'function') {                      // ChatGPT widget bridge (only present when hosted as a ChatGPT component)
+      var extra = ''; if (typeof window.openai.uploadFile === 'function') { var up = await window.openai.uploadFile(new File([blob], outName(), { type: 'image/png' })); if (up && up.fileId) extra = ' File id: ' + up.fileId + '.'; }
+      await window.openai.sendFollowUpMessage({ prompt: handoffPrompt(extra) }); sent = 'Sent to ChatGPT.';
+    } else if (window.parent && window.parent !== window) {                                                // MCP Apps bridge (JSON-RPC over postMessage); no reply is awaited
+      window.parent.postMessage({ jsonrpc: '2.0', id: Date.now(), method: 'ui/message', params: { role: 'user', content: { type: 'text', text: prompt } } }, '*'); sent = 'posted';
+    }
+  } catch (e) { sent = ''; }
+  if (sent === 'Sent to ChatGPT.') { say(sent); return; }
+  save(blob, outName()); $('#dlgprompt').value = prompt;
+  $('#dlgnote').textContent = (sent === 'posted' ? 'The request was posted to the host, but this page cannot confirm it was received. ' : 'This page cannot message ChatGPT by itself. ') + outName() + ' was downloaded: attach it to your next message and paste this prompt.';
+  $('#dlg').showModal();
+}
+$('#apply').onclick = applyToModel;
+$('#dlgcopy').onclick = function () { var t = $('#dlgprompt'); t.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ } if (navigator.clipboard) navigator.clipboard.writeText(t.value).then(function () { say('Prompt copied'); }, function () { if (ok) say('Prompt copied'); }); else if (ok) say('Prompt copied'); };
+$('#dlgdl').onclick = async function () { save(await makePng(), outName()); }; $('#dlgclose').onclick = function () { $('#dlg').close(); };
+
+// ---- wiring
+function pushOp(op) { commitNow(); setOps(S.ops.concat([op])); commitNow(); }
+function setCrop(on) { S.cropOn = on; S.cropRect = null; S.cropDrag = null; var b = $('#cropbtn'); b.setAttribute('aria-pressed', on); b.classList.toggle('on', on); cv.classList.toggle('crop', on); if (on) say('Drag a rectangle on the image to crop'); draw(); }
+$('#flipx').onclick = function () { pushOp({ t: 'flipx' }); }; $('#flipy').onclick = function () { pushOp({ t: 'flipy' }); }; $('#rotcw').onclick = function () { pushOp({ t: 'rot' }); }; $('#imgreset').onclick = function () { commitNow(); setOps([]); commitNow(); }; $('#cropbtn').onclick = function () { setCrop(!S.cropOn); };
+$('#undo').onclick = undo; $('#redo').onclick = redo;
+$('#link').onclick = function () { clearTimeout(hist.t); if (!hist.cur) hist.cur = snapshot(); if (!writeHash()) { say('This page cannot create a link here.', true); return; } var u = location.href; if (navigator.clipboard) navigator.clipboard.writeText(u).then(function () { say('Settings link copied'); }, function () { say('Link is in the address bar'); }); else say('Link is in the address bar'); };
+TONE_KEYS.forEach(function (k) {
+  var r = $('#' + k), n = $('#' + k + 'n'); r.oninput = function () { n.value = r.value; paintRange(r); S.preset = null; markPreset(); schedule(); }; n.oninput = function () { if (isFinite(+n.value)) { r.value = n.value; paintRange(r); S.preset = null; markPreset(); schedule(); } }; r.ondblclick = function () { r.value = n.value = r.dataset.def; paintRange(r); schedule(); };
+});
+['invert', 'linear', 'outinv', 'normalize'].forEach(function (k) { $('#' + k).onchange = function () { if (k !== 'outinv') { S.preset = null; markPreset(); } schedule(); }; });
+$('#wave').onchange = function () { S.preset = null; markPreset(); schedule(); }; $('#waveN').oninput = function () { S.preset = null; markPreset(); schedule(); }; $('#escale').onchange = function () { commitSoon(); };
+$('#width').oninput = function () { setWidth(+$('#width').value); schedule(); fit(); }; $('#widthn').onchange = function () { setWidth(+$('#widthn').value); schedule(); fit(); }; $('#width').ondblclick = function () { setWidth(+$('#width').dataset.def); schedule(); fit(); };
+$('#reset').onclick = function () { var p = PRESETS.filter(function (q) { return q.id === (S.preset || META.preset || 'newsprint'); })[0] || PRESETS[0]; applyPreset(p); say('Reset to ' + p.name); };
+document.querySelectorAll('[data-cmp]').forEach(function (b) { b.onclick = function () { S.cmp = b.dataset.cmp; document.querySelectorAll('[data-cmp]').forEach(function (x) { x.classList.toggle('on', x === b); }); draw(); }; });
+$('#zin').onclick = function () { zoomAt(1.25); }; $('#zout').onclick = function () { zoomAt(0.8); }; $('#zfit').onclick = fit; $('#z100').onclick = function () { zoomAt(1 / S.zoom * (S.dpr ? 1 : 1)); };
+$('#open').onclick = function () { $('#file').click(); }; $('#file').onchange = function (e) { var f = e.target.files[0]; if (f) readFile(f); };
+function readFile(f) { var r = new FileReader(); r.onload = function () { loadImage(r.result, f.name); }; r.readAsDataURL(f); }
+var st = $('#stage'); ['dragenter', 'dragover'].forEach(function (t) { st.addEventListener(t, function (e) { e.preventDefault(); st.classList.add('over'); }); }); ['dragleave', 'drop'].forEach(function (t) { st.addEventListener(t, function (e) { e.preventDefault(); st.classList.remove('over'); }); });
+st.addEventListener('drop', function (e) { var f = e.dataTransfer.files[0]; if (f) readFile(f); }); document.addEventListener('paste', function (e) { var it = Array.from(e.clipboardData.items).filter(function (i) { return i.type.indexOf('image') === 0; })[0]; if (it) readFile(it.getAsFile()); });
+var tip = $('#tip'), tipT = 0, tipEl = null;
+function showTip(el) { var t = el.getAttribute('data-tip'); if (!t) return; tip.textContent = t; var r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight, inPanel = !!el.closest('aside'), x = inPanel ? r.left - w - 10 : r.left, y = inPanel ? r.top + r.height / 2 - h / 2 : r.bottom + 8; if (x < 8) { x = Math.min(r.left, innerWidth - w - 8); y = r.bottom + 8; if (y + h > innerHeight - 8) y = r.top - h - 8; } tip.style.left = Math.max(8, Math.min(x, innerWidth - w - 8)) + 'px'; tip.style.top = Math.max(8, Math.min(y, innerHeight - h - 8)) + 'px'; tip.classList.add('show'); }
+function hideTip() { clearTimeout(tipT); tipEl = null; tip.classList.remove('show'); }
+document.addEventListener('mouseover', function (e) { var el = e.target.closest && e.target.closest('[data-tip]'); if (el === tipEl) return; hideTip(); if (el) { tipEl = el; tipT = setTimeout(function () { showTip(el); }, 350); } }); document.addEventListener('pointerdown', hideTip, true); document.addEventListener('scroll', hideTip, true);
+var dark = function () { return (document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark'; };
+try { var th = localStorage.getItem('viewer-theme'); if (th) document.documentElement.dataset.theme = th; } catch (e) { /* ignore */ }
+$('#theme').onclick = function () { var t = dark() ? 'light' : 'dark'; document.documentElement.dataset.theme = t; try { localStorage.setItem('viewer-theme', t); } catch (e) { /* ignore */ } };
+var togglePanel = function () { $('#app').classList.toggle('nopanel'); setTimeout(function () { size(); fit(); }, 230); }; $('#panelbtn').onclick = togglePanel;
+document.addEventListener('keydown', function (e) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.target.matches('textarea') && !$('#dlg').open) { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+  if (e.key === 'Escape' && S.cropOn) { setCrop(false); return; }
+  if (e.target.matches('input[type=number],select,textarea') || e.ctrlKey || e.metaKey || e.altKey || $('#dlg').open) return; var k = e.key; var cmp = { 1: 'split', 2: 'ht', 3: 'orig' };
+  if (cmp[k]) document.querySelector('[data-cmp="' + cmp[k] + '"]').click(); else if (k === '0') fit(); else if (k === '9') $('#z100').click(); else if (k === '+' || k === '=') zoomAt(1.25); else if (k === '-') zoomAt(0.8); else if (k.toLowerCase() === 'h') togglePanel();
+});
+
+// ---- boot
+document.title = META.title || 'Halftone'; $('#prompt').value = META.prompt || ''; methodSelect(); buildPresets(); paintAll();
+var first = PRESETS.filter(function (q) { return q.id === META.preset; })[0] || PRESETS[0]; applyPreset(first, true);
+var hm = /[#&]s=([^&]+)/.exec(location.hash); if (hm) { try { S.pendingSnap = decodeURIComponent(escape(atob(decodeURIComponent(hm[1])))); } catch (e) { /* ignore bad link */ } }
+if (IMAGE) loadImage(IMAGE, META.filename); else { $('#empty').hidden = false; $('#ttl').textContent = 'Halftone'; }
+window.__ht = { undo: undo, redo: redo, snapshot: snapshot, setOps: setOps, hist: hist, exportScale: exportScale, S: S, applyPreset: applyPreset, render: render, schedule: schedule, makePng: makePng, handoffPrompt: handoffPrompt, PRESETS: PRESETS, setWidth: setWidth, loadImage: loadImage };
+})();
+</script>
+</body>
+</html>

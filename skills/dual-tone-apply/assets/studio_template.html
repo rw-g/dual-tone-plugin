@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Dual-Tone Studio</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#14171c;--muted:#6b7280;--line:#e6e8ec;--accent:#3b6df0;--bad:#d6453d}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1013;--panel:#161a20;--ink:#e9ebef;--muted:#8d97a6;--line:#262b34;--accent:#6b95ff}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#start{max-width:760px;margin:0 auto;padding:40px 20px}h1{font-size:22px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 24px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:640px){.cards{grid-template-columns:1fr}}
+.drop{background:var(--panel);border:2px dashed var(--line);border-radius:14px;padding:22px 16px;text-align:center;cursor:pointer;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.drop.over{border-color:var(--accent)}.drop.ok{border-style:solid;border-color:var(--accent)}.drop b{font-size:15px}.drop small{color:var(--muted)}
+.drop img{max-width:100%;max-height:90px;border-radius:6px;image-rendering:auto}
+button.go{margin-top:18px;width:100%;height:44px;border:0;border-radius:10px;background:var(--accent);color:#fff;font:600 15px inherit;cursor:pointer}button.go:disabled{opacity:.4;cursor:default}
+#msg{margin-top:12px;color:var(--bad);min-height:20px}.how{margin-top:26px;color:var(--muted);font-size:13px}
+#stage{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg)}#stage.on{display:flex}
+#bar{display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--panel)}#bar button{border:1px solid var(--line);background:none;color:var(--ink);border-radius:8px;height:28px;padding:0 10px;cursor:pointer}
+iframe{flex:1;border:0;width:100%}
+</style></head><body>
+<div id="start">
+  <h1>Dual-Tone Studio</h1><p class="sub">Put a black-and-white picture on a 3D model. Everything runs in this page: nothing is uploaded and no Python is needed.</p>
+  <div class="cards">
+    <label class="drop" id="dm"><input type="file" id="fm" accept=".stl,.3mf" hidden><b>1. 3D model</b><small id="mt">Drop or choose an STL or 3MF</small></label>
+    <label class="drop" id="di"><input type="file" id="fi" accept="image/*" hidden><b>2. Picture (optional)</b><small id="it">Drop or choose any image. Skip it to just edit a model that already has a texture, e.g. a 3MF from ChatGPT</small><img id="ip" alt="" hidden></label>
+  </div>
+  <button class="go" id="go" disabled>Open the editor</button><div id="msg" role="alert"></div>
+  <div class="how"><b>Already have a 3MF with the texture on it?</b> Choose only the 3MF and press Open: the editor opens it as it is. Block-colour pictures (logos, silhouettes, line art) are turned black and white automatically. Photos and shaded images open the halftone editor first: pick a look, then press Apply to 3D model. The 3D editor then covers the whole part with the picture; clear it, paint or flood-select the triangles you want, move the projector, swap or add pictures, and download the finished 3MF.</div>
+</div>
+<div id="stage"><div id="bar"><button id="back">&larr; Start over</button><span id="what"></span></div><iframe id="fr"></iframe></div>
+<script>
+const VIEWER = __VIEWER__, HALFTONE = __HALFTONE__;
+const $ = q => document.querySelector(q); let model = null, image = null;
+const fill = (t, o) => Object.keys(o).reduce((s, k) => s.split(k).join(o[k]), t), esc = j => JSON.stringify(j).replace(/<\//g, '<\\/');
+function pick(kind, f) { if (!f) return; $('#msg').textContent = ''; if (kind === 'm') { if (!/\.(stl|3mf)$/i.test(f.name)) { $('#msg').textContent = 'The model must be an .stl or .3mf file.'; return; } model = f; $('#mt').textContent = f.name; $('#dm').classList.add('ok'); }
+  else { image = f; $('#it').textContent = f.name; $('#di').classList.add('ok'); const u = URL.createObjectURL(f); $('#ip').src = u; $('#ip').hidden = false; } $('#go').disabled = !model; }
+[['dm', 'fm', 'm'], ['di', 'fi', 'i']].forEach(([d, i, k]) => { $('#' + i).onchange = e => pick(k, e.target.files[0]); const z = $('#' + d); z.ondragover = e => { e.preventDefault(); z.classList.add('over'); }; z.ondragleave = () => z.classList.remove('over'); z.ondrop = e => { e.preventDefault(); z.classList.remove('over'); pick(k, e.dataTransfer.files[0]); }; });
+// ---- STL -> minimal 3MF (store-only zip)
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function zipStore(files) {
+  const enc = new TextEncoder(), parts = [], cd = []; let off = 0; const u16 = n => [n & 255, n >> 8 & 255], u32 = n => [n & 255, n >> 8 & 255, n >> 16 & 255, n >> 24 & 255];
+  for (const [name, data] of files) { const nb = enc.encode(name), c = crc32(data), h = new Uint8Array([0x50, 0x4b, 3, 4, ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0x21), ...u32(c), ...u32(data.length), ...u32(data.length), ...u16(nb.length), ...u16(0), ...nb]); parts.push(h, data);
+    cd.push(new Uint8Array([0x50, 0x4b, 1, 2, ...u16(20), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0x21), ...u32(c), ...u32(data.length), ...u32(data.length), ...u16(nb.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off), ...nb])); off += h.length + data.length; }
+  const cdl = cd.reduce((a, b) => a + b.length, 0), end = new Uint8Array([0x50, 0x4b, 5, 6, 0, 0, 0, 0, ...u16(files.length), ...u16(files.length), ...u32(cdl), ...u32(off), 0, 0]); return new Blob([...parts, ...cd, end]).arrayBuffer().then(b => new Uint8Array(b));
+}
+function readStl(buf) {
+  const dv = new DataView(buf); let tris = [];
+  if (buf.byteLength >= 84 && 84 + 50 * dv.getUint32(80, true) === buf.byteLength) { const n = dv.getUint32(80, true); for (let i = 0; i < n; i++) { const o = 84 + 50 * i + 12, t = []; for (let k = 0; k < 9; k++) t.push(dv.getFloat32(o + 4 * k, true)); tris.push(t); } }
+  else { const pts = [], re = /vertex\s+(\S+)\s+(\S+)\s+(\S+)/gi, tx = new TextDecoder().decode(buf); let m; while ((m = re.exec(tx))) pts.push(+m[1], +m[2], +m[3]); if (!pts.length || pts.length % 9) throw new Error('this does not look like a readable STL'); for (let i = 0; i < pts.length; i += 9) tris.push(pts.slice(i, i + 9)); }
+  const idx = new Map(), V = [], T = []; for (const t of tris) { const r = []; for (let k = 0; k < 3; k++) { const key = [t[3 * k], t[3 * k + 1], t[3 * k + 2]].map(v => v.toFixed(5)).join(','); let i = idx.get(key); if (i === undefined) { i = V.length; idx.set(key, i); V.push([t[3 * k], t[3 * k + 1], t[3 * k + 2]]); } r.push(i); } if (new Set(r).size === 3) T.push(r); }
+  if (!T.length) throw new Error('the model has no triangles'); return { V, T };
+}
+async function stlTo3mf(file) {
+  const { V, T } = readStl(await file.arrayBuffer()), enc = new TextEncoder();
+  const model = '<?xml version="1.0" encoding="UTF-8"?><model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02"><resources><object id="1" type="model"><mesh><vertices>' + V.map(v => `<vertex x="${v[0]}" y="${v[1]}" z="${v[2]}"/>`).join('') + '</vertices><triangles>' + T.map(t => `<triangle v1="${t[0]}" v2="${t[1]}" v3="${t[2]}"/>`).join('') + '</triangles></mesh></object></resources><build><item objectid="1"/></build></model>';
+  return zipStore([['[Content_Types].xml', enc.encode('<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/><Default Extension="png" ContentType="image/png"/></Types>')],
+    ['_rels/.rels', enc.encode('<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>')], ['3D/3dmodel.model', enc.encode(model)]]);
+}
+const b64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+function load(file) { return new Promise((res, rej) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('cannot read that image')); im.src = u; }); }
+async function classify(im) {                                                  // mostly pure black/white (even with anti-aliased edges) -> threshold; otherwise halftone
+  const k = Math.min(1, 512 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k)); const g = c.getContext('2d', { willReadFrequently: true }); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+  const d = g.getImageData(0, 0, c.width, c.height).data; let bw = 0, n = 0, keys = new Set(); for (let i = 0; i < d.length; i += 4) { n++; const l = (d[i] + d[i + 1] + d[i + 2]) / 3; if (l <= 12 || l >= 243) bw++; keys.add((d[i] >> 4) * 256 + (d[i + 1] >> 4) * 16 + (d[i + 2] >> 4)); }
+  return bw / n >= 0.90 || keys.size <= 12 ? 'threshold' : 'halftone';
+}
+async function thresholdPng(im) { const c = document.createElement('canvas'); c.width = Math.min(im.naturalWidth, 2048); c.height = Math.max(1, Math.round(im.naturalHeight * c.width / im.naturalWidth)); const g = c.getContext('2d', { willReadFrequently: true }); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+  const d = g.getImageData(0, 0, c.width, c.height); for (let i = 0; i < d.data.length; i += 4) { const v = (0.2126 * d.data[i] + 0.7152 * d.data[i + 1] + 0.0722 * d.data[i + 2]) >= 128 ? 255 : 0; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } g.putImageData(d, 0, 0);
+  return new Uint8Array(await (await new Promise(r => c.toBlob(r, 'image/png'))).arrayBuffer()); }
+function show(html, name, what) { $('#start').style.display = 'none'; $('#stage').classList.add('on'); $('#what').textContent = what; const old = $('#fr'), f = document.createElement('iframe'); f.id = 'fr'; f.name = name; f.setAttribute('allow', 'clipboard-write *'); f.srcdoc = html; old.replaceWith(f); }
+async function openEditor(pngBytes, pngName) {                                  // pngBytes null: open the model as it is
+  const m3 = /\.3mf$/i.test(model.name) ? new Uint8Array(await model.arrayBuffer()) : await stlTo3mf(model);
+  const meta = { title: model.name.replace(/\.[^.]+$/, ''), filename: model.name.replace(/\.stl$/i, '.3mf'), triangles: 0, preflight: null, projection: { type: 'box', scale: 1 }, texture: pngBytes ? { name: pngName, b64: b64(pngBytes) } : null };
+  show(fill(VIEWER, { __TITLE__: 'Dual-Tone Studio', __META__: esc(meta), __MODEL__: b64(m3) }), 'dt-editor', model.name + (pngBytes ? ' · ' + pngName : ''));
+}
+$('#go').onclick = async () => {
+  $('#msg').textContent = ''; $('#go').disabled = true;
+  try {
+    if (!image) { await openEditor(null); return; }
+    const im = await load(image), kind = await classify(im);
+    if (kind === 'threshold') await openEditor(await thresholdPng(im), image.name.replace(/\.[^.]+$/, '') + '_bw.png');
+    else {
+      const rd = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(image); }), meta = { title: 'Halftone · ' + image.name, filename: image.name, prompt: '', preset: 'newsprint', width: 800, detect: {} };
+      show(fill(HALFTONE, { __TITLE__: 'Halftone', __META__: esc(meta), __IMAGE__: rd }), 'dt-halftone', 'Choose a halftone look, then press Apply to 3D model');
+    }
+  } catch (e) { $('#msg').textContent = e.message || String(e); $('#go').disabled = false; }
+};
+window.addEventListener('message', async e => { if (e.data && e.data.dtApply) { try { await openEditor(new Uint8Array(await e.data.png.arrayBuffer()), e.data.name || 'halftone.png'); } catch (err) { $('#msg').textContent = err.message; } } });
+$('#back').onclick = () => { $('#fr').srcdoc = '<!doctype html>'; $('#stage').classList.remove('on'); $('#start').style.display = ''; $('#go').disabled = !model; };
+</script></body></html>

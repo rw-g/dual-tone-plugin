@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#14171c;--muted:#6b7280;--line:#e6e8ec;--soft:#f1f3f6;--accent:#3b6df0;--accent-ink:#fff;--ok:#16a06a;--bad:#d6453d;--warn:#b57a00;--stage:#dfe3ea;--track:#dfe3ea;--shadow:0 1px 2px rgba(16,24,40,.06),0 6px 20px rgba(16,24,40,.10);--r:10px;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1013;--panel:#161a20;--ink:#e9ebef;--muted:#8d97a6;--line:#262b34;--soft:#1d222a;--accent:#6b95ff;--accent-ink:#0b1020;--ok:#3ccb87;--bad:#ff6b61;--warn:#f0b429;--stage:#1b1f27;--track:#303744;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45);color-scheme:dark}}
+:root[data-theme=dark]{--bg:#0e1013;--panel:#161a20;--ink:#e9ebef;--muted:#8d97a6;--line:#262b34;--soft:#1d222a;--accent:#6b95ff;--accent-ink:#0b1020;--ok:#3ccb87;--bad:#ff6b61;--warn:#f0b429;--stage:#1b1f27;--track:#303744;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45);color-scheme:dark}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--bg);color:var(--ink);font:13px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#app{display:grid;grid-template-columns:1fr 316px;height:100%;transition:grid-template-columns .2s}#app.nopanel{grid-template-columns:1fr 0}#app.nopanel aside{visibility:hidden}
+@media(max-width:820px){#app,#app.nopanel{grid-template-columns:1fr;grid-template-rows:58% 42%}#app.nopanel{grid-template-rows:1fr 0}}
+#stage{position:relative;background:var(--stage);min-height:0;min-width:0;overflow:hidden}#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+/* floating toolbars */
+.bar{position:absolute;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}.bar>*{pointer-events:auto}#bar-l{left:12px;top:12px;right:56px}#bar-r{right:12px;top:12px}
+.grp{display:flex;align-items:center;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:3px;box-shadow:var(--shadow)}
+button{font:inherit;color:var(--ink);background:none;border:0;border-radius:7px;min-height:28px;padding:0 9px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s}
+button:hover{background:var(--soft)}button:active{transform:translateY(.5px)}button.on,button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}button:disabled{opacity:.4;cursor:default}
+button.ic{width:30px;padding:0;justify-content:center}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.sep{width:1px;height:18px;background:var(--line);margin:0 3px}
+#msg{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);max-width:min(560px,calc(100% - 24px));background:var(--ink);color:var(--bg);border-radius:999px;padding:7px 14px;font-size:12px;box-shadow:var(--shadow);pointer-events:none;transition:opacity .2s}#msg.err{background:var(--bad);color:#fff}#msg[hidden]{display:block;opacity:0}
+#ring{position:absolute;pointer-events:none;border:1.5px solid var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:50%;transform:translate(-50%,-50%);left:-100px;top:-100px}
+#hint{position:absolute;left:12px;bottom:12px;color:var(--muted);font-size:11px;pointer-events:none}
+/* side panel */
+aside{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;min-width:0}
+#head{padding:14px 16px 10px;border-bottom:1px solid var(--line)}h1{font-size:14px;font-weight:650;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sub{color:var(--muted);font-size:12px;margin-top:1px}
+#pf{margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600}.chip.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}.chip.bad{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+#scroll{flex:1;overflow:auto;padding:4px 0}
+details.sec{border-bottom:1px solid var(--line)}details.sec>summary{list-style:none;cursor:pointer;padding:11px 16px;font-size:11px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;justify-content:space-between;user-select:none}
+details.sec>summary::-webkit-details-marker{display:none}details.sec>summary::after{content:"";width:6px;height:6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg);transition:transform .15s}details.sec[open]>summary::after{transform:rotate(45deg)}
+.body{padding:0 16px 14px;display:grid;gap:10px}
+#texdd{position:relative}#texbtn{width:100%;justify-content:space-between;height:34px;border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:0 8px 0 6px;overflow:hidden}#texbtn .nm{overflow:hidden;text-overflow:ellipsis;flex:1;text-align:left}#texbtn::after{content:"";width:6px;height:6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);flex:none}
+#texlist{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:4px;max-height:280px;overflow:auto}#texlist[hidden]{display:none}
+.titem{display:flex;align-items:center;gap:6px;border-radius:7px;padding:3px 3px 3px 4px}.titem:hover,.titem.sel{background:var(--soft)}.titem .pick{flex:1;min-width:0;padding:0;gap:8px;background:none!important;min-height:30px}.titem .pick span{overflow:hidden;text-overflow:ellipsis}.titem .pick small{color:var(--muted);display:block;font-size:11px}.titem button.ic{width:26px;min-height:26px}
+.thumb{width:26px;height:26px;border-radius:5px;border:1px solid var(--line);background:#fff center/cover;image-rendering:pixelated;flex:none}.titem.add{border-top:1px solid var(--line);margin-top:3px;border-radius:0 0 7px 7px}.titem.add .pick{color:var(--accent);font-weight:600}
+button.rm{color:var(--bad)}button.rm:hover{background:color-mix(in srgb,var(--bad) 16%,transparent)}
+select{width:100%;height:30px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--soft);color:var(--ink);font:inherit}
+.seg{display:flex;background:var(--soft);border-radius:8px;padding:2px;gap:2px}.seg label{flex:1;text-align:center;border-radius:6px;padding:4px 6px;cursor:pointer;color:var(--muted);font-weight:550;position:relative}.seg label:hover{color:var(--ink)}.seg input{position:absolute;opacity:0;inset:0;cursor:pointer}.seg label:has(input:checked){background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(16,24,40,.12)}.seg label:has(input:focus-visible){outline:2px solid var(--accent)}.seg button{flex:1;justify-content:center;color:var(--muted)}.seg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(16,24,40,.12)}
+.ctl{display:grid;grid-template-columns:84px 1fr 62px;gap:8px;align-items:center}.ctl>label{color:var(--muted)}
+input[type=number]{width:100%;height:26px;padding:0 6px;border:1px solid var(--line);border-radius:7px;background:var(--soft);color:var(--ink);font:inherit;font-variant-numeric:tabular-nums;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--p),var(--track) var(--p))}input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--p),var(--track) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--panel);border:2px solid var(--accent);margin-top:-5px;box-shadow:0 1px 3px rgba(0,0,0,.25)}input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--panel);border:2px solid var(--accent)}
+.check{display:flex;align-items:center;gap:8px;color:var(--ink);cursor:pointer}.check input{accent-color:var(--accent);margin:0}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.row.sp{justify-content:space-between}.count{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.ghost{border:1px solid var(--line)}.ghost:hover{border-color:var(--accent)}
+#uvbox{width:100%;aspect-ratio:1;border:1px solid var(--line);border-radius:8px;background:#fff;display:block}
+#foot{padding:12px 16px;border-top:1px solid var(--line);display:grid;gap:8px;background:var(--panel)}
+.primary{background:var(--accent);color:var(--accent-ink);justify-content:center;min-height:34px;font-weight:600;position:relative}.primary:hover{background:var(--accent);filter:brightness(1.08)}.primary.dirty::after{content:"";position:absolute;top:6px;right:8px;width:7px;height:7px;border-radius:50%;background:#ffb020}
+.note{color:var(--muted);font-size:12px}pre{white-space:pre-wrap;font-size:11px;background:var(--soft);padding:8px;border-radius:7px;max-height:180px;overflow:auto;margin:0}
+#tip{position:fixed;z-index:50;max-width:260px;background:var(--ink);color:var(--bg);font-size:12px;line-height:1.35;padding:6px 9px;border-radius:7px;box-shadow:var(--shadow);pointer-events:none;opacity:0;transition:opacity .12s}#tip.show{opacity:1}
+kbd{font:11px ui-monospace,monospace;background:rgba(127,127,127,.25);border-radius:4px;padding:0 4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-orbit" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="4"/><circle cx="12" cy="12" r="2.2"/><path d="M5 8.5C6.5 4 12 2.5 12 2.5"/></symbol>
+<symbol id="i-paint" viewBox="0 0 24 24"><path d="M14.5 4.5l5 5-8.5 8.5-5.2.8.8-5.2z"/><path d="M4 21c1.6-.2 2.6-1 3-2.2"/></symbol>
+<symbol id="i-flood" viewBox="0 0 24 24"><path d="M6 11l6-6.5 7 7-6.5 6.5z"/><path d="M5 11h14"/><path d="M20.5 15.5c1 1.4 1.5 2.3 1.5 3a1.5 1.5 0 0 1-3 0c0-.7.5-1.6 1.5-3z"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h9a6 6 0 0 1 0 12h-3"/></symbol>
+<symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9h-9a6 6 0 0 0 0 12h3"/></symbol>
+<symbol id="i-wire" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></symbol>
+<symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+<symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+<symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></symbol>
+</defs></svg>
+<div id="app">
+  <div id="stage">
+    <div class="bar" id="bar-l">
+      <div class="grp" role="toolbar" aria-label="Selection tools">
+        <button class="on" data-tool="orbit" data-tip="Orbit: drag to rotate, right-drag to pan, wheel to zoom. Also lets you use the projection gimbal. (O)"><svg class="i"><use href="#i-orbit"/></svg>Orbit</button>
+        <button data-tool="paint" data-tip="Paint: drag a circle brush over the model to add or remove every triangle the circle touches. Mode is set in the Triangles section. ([ ] change size) (P)"><svg class="i"><use href="#i-paint"/></svg>Paint</button>
+        <button data-tool="flood" data-tip="Flood: click a triangle to select connected triangles whose normal is within the Flood angle of the clicked one. (F)"><svg class="i"><use href="#i-flood"/></svg>Flood</button>
+        <span class="sep"></span>
+        <button class="ic" id="undo" data-tip="Undo selection change (Ctrl/Cmd+Z)" aria-label="Undo" disabled><svg class="i"><use href="#i-undo"/></svg></button>
+        <button class="ic" id="redo" data-tip="Redo (Ctrl/Cmd+Shift+Z)" aria-label="Redo" disabled><svg class="i"><use href="#i-redo"/></svg></button>
+      </div>
+      <div class="grp" role="toolbar" aria-label="View">
+        <button data-v="iso" data-tip="Isometric view (1)">Iso</button><button data-v="front" data-tip="Front view, looking along +Y (2)">Front</button><button data-v="top" data-tip="Top view (3)">Top</button><button data-v="right" data-tip="Right view (4)">Right</button>
+        <span class="sep"></span>
+        <button class="ic" id="fitview" data-tip="Frame the whole model" aria-label="Frame model"><svg class="i"><use href="#i-fit"/></svg></button>
+        <button class="ic" id="wire" data-tip="Wireframe (W)" aria-label="Wireframe" aria-pressed="false"><svg class="i"><use href="#i-wire"/></svg></button>
+      </div>
+    </div>
+    <div class="bar" id="bar-r"><div class="grp">
+      <button class="ic" id="theme" data-tip="Switch light / dark theme" aria-label="Theme"><svg class="i"><use href="#i-sun"/></svg></button>
+      <button class="ic" id="panelbtn" data-tip="Show / hide the side panel (H)" aria-label="Toggle panel"><svg class="i"><use href="#i-panel"/></svg></button>
+    </div></div>
+    <div id="ring" hidden></div>
+    <div id="msg" hidden>Loading model…</div>
+  </div>
+  <aside>
+    <div id="head"><h1 id="ttl"></h1><div class="sub" id="sub"></div><div id="pf"></div></div>
+    <div id="scroll">
+      <div id="notex" class="note" style="padding:14px 16px" hidden>No image textures in this model, so there is no UV map to adjust.</div>
+      <div id="uvpanel" hidden>
+        <details class="sec" open><summary>Texture</summary><div class="body">
+          <select id="texsel" aria-label="Texture" hidden></select>
+          <div id="texdd"><button id="texbtn" aria-haspopup="listbox" aria-expanded="false" data-tip="Choose which texture to adjust. Each texture keeps its own selection, projection and transform. Swap or remove a texture, or add another, from the list."></button><div id="texlist" role="listbox" hidden></div></div>
+          <input type="file" id="texfile" accept="image/*" hidden>
+          <div class="note" id="texempty" hidden>No textures on this part. Choose Add New to upload one.</div>
+          <div class="row sp" id="texrow"><span class="count" id="selcount"></span><button class="ghost" id="reset" data-tip="Reset this texture: triangle selection, projection and transform."><svg class="i"><use href="#i-reset"/></svg>Reset</button></div>
+        </div></details>
+        <div id="texdep">
+        <details class="sec" open><summary>Triangles</summary><div class="body">
+          <div class="seg" data-tip="What Paint and Flood do: give triangles this texture (Add), or take it away (Remove). Removed triangles become white, or go back to their original non-texture material; they never fall back to another texture. Added triangles need UVs, so a Planar projection is switched on. (X toggles)">
+            <label><input type="radio" name="pmode" value="add" checked>Add</label><label><input type="radio" name="pmode" value="rem">Remove</label></div>
+          <div class="ctl" data-tip="Paint brush radius in pixels. ([ and ] change it)"><label for="bsize">Brush</label><input id="bsize" type="range" min="4" max="200" step="1" value="30" data-def="30"><input id="bsizen" type="number" min="1" max="400" step="1" value="30"></div>
+          <div class="ctl" data-tip="Flood selects connected triangles whose normal differs from the clicked triangle's normal by at most this angle."><label for="fang">Flood angle</label><input id="fang" type="range" min="0" max="180" step="1" value="20" data-def="20"><input id="fangn" type="number" min="0" max="180" step="1" value="20"></div>
+          <label class="check" data-tip="Paint only triangles that face the camera. Triangles hidden behind other parts are not detected."><input type="checkbox" id="front" checked>Front-facing only</label>
+          <label class="check" data-tip="Tint the triangles that use this texture so the selection is easy to see."><input type="checkbox" id="hl">Highlight selection</label>
+          <button class="ghost" id="selclear" style="justify-content:center;width:100%" data-tip="Clear this texture from every triangle that uses it so you can start fresh, then use Paint or Flood to add it back where you want it. The triangles become white; other textures are not touched. (Undo brings it back.)"><svg class="i"><use href="#i-reset"/></svg>Clear texture from all triangles</button>
+          <div class="row"><button class="ghost" id="selreset" data-tip="Go back to the triangles the file assigned to this texture">Reset selection</button></div>
+        </div></details>
+        <details class="sec" open><summary>Projection</summary><div class="body">
+          <select id="proj" aria-label="Projection" data-tip="Re-map the UVs of the selected triangles from a projector you can move in the viewport. Keep file UVs leaves the file's own coordinates alone.">
+            <option value="keep">Keep file UVs</option><option value="planar">Planar (orthographic)</option><option value="cylindrical">Cylindrical</option><option value="spherical">Spherical</option><option value="box">Box</option></select>
+          <div id="gimbal" hidden><div class="row"><div class="seg" style="flex:1"><button data-gm="translate" data-tip="Move the projector">Move</button><button class="on" data-gm="rotate" data-tip="Rotate the projector">Rotate</button><button data-gm="scale" data-tip="Scale the projector">Scale</button></div><button class="ic ghost" id="gfit" data-tip="Fit the projector to the model" aria-label="Fit projector"><svg class="i"><use href="#i-fit"/></svg></button></div>
+          <span id="gnote" hidden></span></div>
+        </div></details>
+        <details class="sec" open><summary>Transform</summary><div class="body">
+          <div class="ctl" data-tip="Turns the picture counter-clockwise (seen from outside) about the texture centre. Double-click the slider to reset."><label for="rot">Rotate °</label><input id="rot" type="range" min="-180" max="180" step="0.5" value="0" data-def="0"><input id="rotn" type="number" min="-180" max="180" step="0.5" value="0"></div>
+          <div class="ctl" data-tip="Moves the picture toward +u (right). Double-click to reset."><label for="du">Shift u</label><input id="du" type="range" min="-0.5" max="0.5" step="0.005" value="0" data-def="0"><input id="dun" type="number" min="-0.5" max="0.5" step="0.005" value="0"></div>
+          <div class="ctl" data-tip="Moves the picture toward +v (up). Double-click to reset."><label for="dv">Shift v</label><input id="dv" type="range" min="-0.5" max="0.5" step="0.005" value="0" data-def="0"><input id="dvn" type="number" min="-0.5" max="0.5" step="0.005" value="0"></div>
+          <div class="ctl" data-tip="Texture size on the surface: 2 = twice as large. The slider stops at 3; type a larger number for more. 0 is treated as 0.01. Double-click to reset."><label for="scale">Scale</label><input id="scale" type="range" min="0" max="3" step="0.01" value="1" data-def="1"><input id="scalen" type="number" min="0" step="0.01" value="1"></div>
+        </div></details>
+        <details class="sec"><summary>UV preview</summary><div class="body">
+          <canvas id="uvbox" width="300" height="300" aria-label="UV layout preview" data-tip="The texture image with the UV triangles (blue) in the texture space the surface samples from."></canvas>
+        </div></details>
+        </div>
+      </div>
+      <details class="sec" id="checks" hidden><summary>Model checks</summary><div class="body"><pre id="pftxt"></pre></div></details>
+    </div>
+    <div id="foot">
+      <button class="primary" id="dl" data-tip="Save a new 3MF with your triangle selection, projection and transform baked into the UV coordinates."><svg class="i"><use href="#i-down"/></svg>Download adjusted 3MF</button>
+      <div class="row sp"><button class="ghost" id="resetall" data-tip="Reset every texture: selection, projection and transform."><svg class="i"><use href="#i-reset"/></svg>Reset all</button><span class="note" id="dlmsg"></span></div>
+    </div>
+  </aside>
+</div>
+<div id="tip" role="tooltip"></div>
+<script>__BUNDLE__</script>
+<script>__UVMATH__</script>
+<script>
+(function () {
+'use strict';
+const META = __META__;
+const MODEL_B64 = "__MODEL__";
+const { THREE, OrbitControls, TransformControls, ThreeMFLoader, fflate } = window.V3;
+const $ = s => document.querySelector(s);
+const b64 = s => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+const zipBytes = b64(MODEL_B64);
+$('#ttl').textContent = META.title; $('#sub').textContent = META.filename + ' · ' + META.triangles.toLocaleString() + ' triangles';
+const pf = META.preflight; $('#pf').innerHTML = pf && !pf.valid ? `<span class="chip bad">This file may not open correctly (${pf.errors.length} problem${pf.errors.length === 1 ? '' : 's'}) - see Model checks below</span>` : '';
+$('#pftxt').textContent = pf ? JSON.stringify({ valid: pf.valid, errors: pf.errors, warnings: pf.warnings, summary: pf.summary }, null, 1) : ''; if (pf && !pf.valid) $('#checks').hidden = false;
+let sayT = 0; const say = (t, err) => { const m = $('#msg'); m.textContent = t; m.className = err ? 'err' : ''; m.hidden = !t; clearTimeout(sayT); if (t && !err) sayT = setTimeout(() => { m.hidden = true; }, 3200); };
+
+// ---- scene
+const stage = $('#stage'), renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); stage.insertBefore(renderer.domElement, stage.firstChild);
+const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(40, 1, 0.1, 5000); camera.up.set(0, 0, 1);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f99, 1.35)); const dl = new THREE.DirectionalLight(0xffffff, 1.1); dl.position.set(-1, -2, 3); scene.add(dl); const dl2 = new THREE.DirectionalLight(0xffffff, 0.5); dl2.position.set(2, 1, -1); scene.add(dl2);
+const grid = new THREE.GridHelper(256, 16, 0x8a93a3, 0xc4c9d2); grid.rotation.x = Math.PI / 2; grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
+const axes = new THREE.AxesHelper(30); scene.add(axes);
+const controls = new OrbitControls(camera, renderer.domElement); controls.addEventListener('change', render);
+function render() { renderer.render(scene, camera); }
+function resize() { const w = stage.clientWidth || 600, h = stage.clientHeight || 400; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); render(); }
+new ResizeObserver(resize).observe(stage);
+let root = null, wire = false;
+function frame(dir) {
+  if (!root) return; const b = new THREE.Box3().setFromObject(root), c = b.getCenter(new THREE.Vector3()), s = b.getSize(new THREE.Vector3()), r = Math.max(s.x, s.y, s.z, 1e-3) * 0.85;
+  const d = new THREE.Vector3(...(dir || [-1.1, -1.4, 0.9])).normalize(), dist = r / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.05;
+  camera.position.copy(c).addScaledVector(d, dist); controls.target.copy(c); camera.near = dist / 200; camera.far = dist * 40; camera.updateProjectionMatrix();
+  grid.scale.setScalar(Math.max(r / 60, 0.02)); grid.position.set(c.x, c.y, b.min.z - 0.001 * dist); axes.scale.setScalar(Math.max(r / 45, 0.02)); axes.position.set(b.min.x, b.min.y, b.min.z); controls.update(); render();
+}
+document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => frame({ iso: [-1.1, -1.4, 0.9], front: [0, -1, 0.001], top: [0, 0.001, 1], right: [1, 0, 0.001] }[b.dataset.v]));
+$('#fitview').onclick = () => frame();
+$('#wire').onclick = e => { wire = !wire; e.currentTarget.setAttribute('aria-pressed', wire); root && root.traverse(o => { if (o.isMesh) [].concat(o.material).forEach(m => { m.wireframe = wire; }); }); render(); };
+
+// ---- model + texture bookkeeping
+const files = fflate.unzipSync(zipBytes);                                   // { path: Uint8Array } in archive order
+const modelPath = Object.keys(files).find(k => /(^|\/)3dmodel\.model$/i.test(k)) || Object.keys(files).find(k => k.endsWith('.model'));
+const xmlDoc = new DOMParser().parseFromString(new TextDecoder().decode(files[modelPath]), 'application/xml');
+const byLocal = (doc, n) => Array.from(doc.getElementsByTagNameNS('*', n));
+const texInfo = {};                                                         // texid -> { id, path, groups: [{el, uvs}], state, imgUrl }
+byLocal(xmlDoc, 'texture2d').forEach(t => { texInfo[t.getAttribute('id')] = { id: t.getAttribute('id'), path: t.getAttribute('path'), el: t, groups: [], tris: 0, state: { rot: 0, du: 0, dv: 0, scale: 1 }, three: [] }; });
+byLocal(xmlDoc, 'texture2dgroup').forEach(g => { const t = texInfo[g.getAttribute('texid')]; if (t) t.groups.push({ el: g, coords: byLocal(g, 'tex2coord').map(c => [parseFloat(c.getAttribute('u')), parseFloat(c.getAttribute('v'))]) }); });
+const groupToTex = {}; Object.values(texInfo).forEach(t => t.groups.forEach(g => { groupToTex[g.el.getAttribute('id')] = t; }));
+byLocal(xmlDoc, 'triangle').forEach(tr => { const pid = tr.getAttribute('pid'); if (pid && groupToTex[pid]) { groupToTex[pid].tris++; (groupToTex[pid].polys ||= []).push([tr.getAttribute('p1'), tr.getAttribute('p2'), tr.getAttribute('p3')].map(Number)); } });
+const textures = Object.values(texInfo).filter(t => t.groups.length && t.tris);
+textures.forEach(t => { t.name = t.path.split('/').pop(); t.removed = false; });
+const live = () => textures.filter(t => !t.removed);
+
+function applyPreview(t) {
+  const m = uvAffine(t.state), ident = uvIsIdentity(t.state);
+  t.three.forEach(tx => { tx.matrixAutoUpdate = false; tx.matrix.set(m[0], m[1], m[2], m[3], m[4], m[5], 0, 0, 1); if (!ident || (t.proj && t.proj.type !== 'keep')) { tx.wrapS = tx.wrapT = THREE.RepeatWrapping; } tx.needsUpdate = true; });
+  render();
+}
+try {
+  const loader = new ThreeMFLoader(); root = loader.parse(zipBytes.buffer.slice(zipBytes.byteOffset, zipBytes.byteOffset + zipBytes.byteLength)); scene.add(root);
+  let meshes = 0; root.traverse(o => { if (o.isMesh) { meshes++; [].concat(o.material).forEach(m => { m.side = THREE.DoubleSide; if (m.map && m.map.userData && texInfo[m.map.userData.texid]) { const t = texInfo[m.map.userData.texid]; if (!t.three.includes(m.map)) t.three.push(m.map); m.map.magFilter = THREE.NearestFilter; } }); } });
+  if (!meshes) throw new Error('the file loaded but contains no meshes');
+  resize(); frame(); say(meshes + ' mesh' + (meshes > 1 ? 'es' : '') + ' loaded');
+  setTimeout(() => say(''), 2500);
+  const t0 = performance.now(); (function wait() { if (performance.now() - t0 < 4000) { textures.forEach(t => t.three.forEach(tx => { tx.needsUpdate = true; })); render(); requestAnimationFrame(wait); } })();
+} catch (e) { say('Viewer could not load this 3MF: ' + (e.message || e) + (pf && !pf.valid ? ' (see the preflight errors in the side panel)' : ''), true); }
+
+// ---- small UI helpers
+function paintRange(r) { const mn = +r.min || 0, mx = +r.max || 100; r.style.setProperty('--p', Math.max(0, Math.min(100, (+r.value - mn) / (mx - mn) * 100)) + '%'); }
+const paintAll = () => document.querySelectorAll('input[type=range]').forEach(paintRange);
+const markDirty = (v = true) => $('#dl').classList.toggle('dirty', v);
+
+// ---- UV controls
+let cur = textures[0] || null, listOpen = false;
+const ids = ['rot', 'du', 'dv', 'scale'];
+function syncUI() { if (!cur) return; ids.forEach(k => { $('#' + k).value = cur.state[k]; $('#' + k + 'n').value = cur.state[k]; }); paintAll(); drawUV(); }
+function drawUV() {
+  if (!cur) return;
+  const cv = $('#uvbox'), g = cv.getContext('2d'), W = cv.width, H = cv.height; g.clearRect(0, 0, W, H); g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+  const img = cur.img; if (img && img.complete) g.drawImage(img, 0, 0, W, H); g.strokeStyle = 'rgba(0,0,0,.35)'; g.strokeRect(0.5, 0.5, W - 1, H - 1);
+  const m = uvAffine(cur.state); g.strokeStyle = '#2f6fed'; g.lineWidth = 1; g.beginPath(); let n = 0;
+  const tri = (a) => { const pts = [0, 2, 4].map(k => uvApply(m, a[k], a[k + 1])); g.moveTo(pts[0][0] * W, (1 - pts[0][1]) * H); g.lineTo(pts[1][0] * W, (1 - pts[1][1]) * H); g.lineTo(pts[2][0] * W, (1 - pts[2][1]) * H); g.closePath(); };
+  if (cur.projUV) { for (const it of cur.projUV) { const A = it.uv; for (let i = 0; i + 5 < A.length && n < 6000; i += 6, n++) tri(A.subarray(i, i + 6)); } }
+  else for (const gp of cur.groups) { for (const p of (cur.polys || [])) { if (++n > 6000) break; tri([].concat(...p.map(i => gp.coords[i]))); } break; }
+  g.stroke();
+}
+{
+  $('#uvpanel').hidden = false;
+  textures.forEach((t, i) => { const o = document.createElement('option'); o.value = i; $('#texsel').appendChild(o); const bytes = files[t.path.replace(/^\//, '')], mime = t.el.getAttribute('contenttype') || 'image/png'; if (bytes) { t.img = new Image(); t.img.onload = () => { if (cur === t) drawUV(); texList(); }; t.img.src = URL.createObjectURL(new Blob([bytes], { type: mime })); t.rec = t.rec0 = { bytes, mime, name: t.name, url: t.img.src, img: t.img }; } });
+  $('#texsel').onchange = e => { cur = textures[+e.target.value]; syncUI(); };
+  const set = (k, v) => { if (!isFinite(v)) return; cur.state[k] = k === 'scale' ? Math.max(0, v) : v; $('#' + k).value = $('#' + k + 'n').value = cur.state[k]; paintRange($('#' + k)); markDirty(); applyPreview(cur); drawUV(); };
+  ids.forEach(k => { $('#' + k).addEventListener('dblclick', () => set(k, +$('#' + k).dataset.def)); });
+  ids.forEach(k => { $('#' + k).addEventListener('input', e => set(k, parseFloat(e.target.value))); $('#' + k + 'n').addEventListener('input', e => set(k, parseFloat(e.target.value))); });
+  $('#reset').onclick = () => { cur.state = { rot: 0, du: 0, dv: 0, scale: 1 }; syncUI(); applyPreview(cur); };
+  $('#resetall').onclick = () => { textures.forEach(t => { t.state = { rot: 0, du: 0, dv: 0, scale: 1 }; applyPreview(t); }); syncUI(); };
+  syncUI();
+}
+
+
+// ---- projections (planar / cylindrical / spherical / box) driven by a gimbal in the viewport
+const objEls = {}; byLocal(xmlDoc, 'object').forEach(o => { objEls[o.getAttribute('id')] = o; });
+const tr12 = el => { const v = (el.getAttribute('transform') || '').trim().split(/[\s,]+/).map(Number); return v.length === 12 && v.every(isFinite) ? new THREE.Matrix4().set(v[0], v[3], v[6], v[9], v[1], v[4], v[7], v[10], v[2], v[5], v[8], v[11], 0, 0, 0, 1) : new THREE.Matrix4(); };
+const inst = {};                                                            // object id -> world matrix of its first instance (3MF row-vector transforms == column form M_item * M_component)
+byLocal(xmlDoc, 'item').forEach(it => { (function walk(id, M, depth) {
+  const o = objEls[id]; if (!o || depth > 8) return;
+  if (o.getElementsByTagNameNS('*', 'mesh').length && !inst[id]) inst[id] = M.clone();
+  byLocal(o, 'component').forEach(c => { if (!Array.from(c.attributes).some(a => a.localName === 'path')) walk(c.getAttribute('objectid'), M.clone().multiply(tr12(c)), depth + 1); });
+})(it.getAttribute('objectid'), tr12(it), 0); });
+const sceneBox = () => new THREE.Box3().setFromObject(root);
+const projector = new THREE.Object3D(), helper = new THREE.Group(); projector.add(helper); scene.add(projector);
+const tc = new TransformControls(camera, renderer.domElement); tc.setMode('rotate'); tc.setSize(0.9); tc.attach(projector); tc.visible = false; tc.enabled = false; scene.add(tc);
+tc.addEventListener('change', render); tc.addEventListener('dragging-changed', e => { controls.enabled = !e.value; });
+const lineMat = new THREE.LineBasicMaterial({ color: 0x2f6fed, depthTest: false, transparent: true });
+function circle(r, z, ax) { const p = []; for (let i = 0; i < 64; i++) { const a = [i, i + 1].map(k => k / 64 * 2 * Math.PI); p.push(...[0, 1].map(k => ax === 'z' ? [r * Math.cos(a[k]), r * Math.sin(a[k]), z] : ax === 'x' ? [z, r * Math.cos(a[k]), r * Math.sin(a[k])] : [r * Math.cos(a[k]), z, r * Math.sin(a[k])]).flat()); } return p; }
+function buildHelper(type) {
+  helper.clear(); helper.scale.setScalar(modelSize); let p = [];
+  if (type === 'planar') { const c = [[-.5, -.5], [.5, -.5], [.5, .5], [-.5, .5]]; for (let i = 0; i < 4; i++) p.push(c[i][0], c[i][1], 0, c[(i + 1) % 4][0], c[(i + 1) % 4][1], 0); p.push(0, 0, .5, 0, 0, -.5, 0, 0, -.5, .06, 0, -.4, 0, 0, -.5, -.06, 0, -.4, .5, .5, 0, .5, .35, 0, .5, .5, 0, .35, .5, 0); }   // frame + arrow along -Z (projection direction) + corner tick marking +u/+v
+  else if (type === 'cylindrical') { p = circle(.5, .5, 'z').concat(circle(.5, -.5, 'z'), [.5, 0, -.5, .5, 0, .5, -.5, 0, -.5, -.5, 0, .5, 0, .5, -.5, 0, .5, .5, 0, -.5, -.5, 0, -.5, .5, 0, 0, -.7, 0, 0, .7]); }
+  else if (type === 'spherical') p = circle(.5, 0, 'z').concat(circle(.5, 0, 'x'), circle(.5, 0, 'y'));
+  else if (type === 'box') { const c = [-.5, .5]; for (const x of c) for (const y of c) { p.push(x, y, -.5, x, y, .5, x, -.5, y, x, .5, y, -.5, x, y, .5, x, y); } }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); const ls = new THREE.LineSegments(g, lineMat); ls.renderOrder = 10; helper.add(ls);
+}
+const PROJ_TIP = 'Re-map the UVs of the selected triangles from a projector you can move in the viewport. Keep file UVs leaves the file\'s own coordinates alone.';
+const NOTES = { planar: 'Projects along the arrow (local -Z). Scale X/Y sets the picture size on the model; corner tick = +u/+v.', cylindrical: 'Axis = local Z. Scale Z sets the height covered by one picture; the picture wraps once around.', spherical: 'Poles = local Z. The picture wraps once around, pole to pole.', box: 'Each face uses the projection that faces it most. Scale X/Y/Z sets the tile size per face.' };
+function loadFrame(t) { const f = t.proj; projector.position.fromArray(f.pos); projector.quaternion.fromArray(f.quat); projector.scale.fromArray(f.scale); projector.updateMatrixWorld(true); }
+function saveFrame(t) { t.proj.pos = projector.position.toArray(); t.proj.quat = projector.quaternion.toArray(); t.proj.scale = projector.scale.toArray(); }
+function currentFrame() { const e = new THREE.Matrix4().makeRotationFromQuaternion(projector.quaternion).elements; return { pos: projector.position.toArray(), rot: [e[0], e[1], e[2], e[4], e[5], e[6], e[8], e[9], e[10]], size: projector.scale.toArray().map(s => s * modelSize) }; }
+
+// ---- per-triangle table (world space, file order) and ownership. own: >=0 texture index | -1 white | -2 original non-texture material
+const objList = byLocal(xmlDoc, 'object'), groupById = {}; Object.values(texInfo).forEach(t => t.groups.forEach(g => { groupById[g.el.getAttribute('id')] = g; }));
+let TB = null, modelSize = 1, tool = 'orbit', painting = false;
+function ensureSize() { const z = sceneBox().getSize(new THREE.Vector3()); modelSize = Math.max(z.x, z.y, z.z, 1e-6); }
+function ensureTB() {
+  if (TB) return TB; ensureSize(); const W = [], PID = [], OBJ = [], PI = [], INIT = [];
+  objList.forEach(o => {
+    const id = o.getAttribute('id'), M = inst[id], mesh = o.getElementsByTagNameNS('*', 'mesh')[0]; if (!M || !mesh) return;
+    const V = byLocal(mesh, 'vertex').map(v => new THREE.Vector3(+v.getAttribute('x'), +v.getAttribute('y'), +v.getAttribute('z')).applyMatrix4(M));
+    byLocal(mesh, 'triangle').forEach(tr => {
+      ['v1', 'v2', 'v3'].forEach(k => { const p = V[+tr.getAttribute(k)] || new THREE.Vector3(); W.push(p.x, p.y, p.z); });
+      const pid = tr.getAttribute('pid') || o.getAttribute('pid'), tx = pid ? groupToTex[pid] : null, p1 = tr.getAttribute('p1');
+      PID.push(pid); OBJ.push(id); PI.push(tx ? [p1, tr.getAttribute('p2') ?? p1, tr.getAttribute('p3') ?? p1].map(Number) : null); INIT.push(tx ? textures.indexOf(tx) : -2);
+    });
+  });
+  const n = INIT.length, w = Float32Array.from(W), nrm = new Float32Array(n * 3), cen = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const a = i * 9, e1 = [w[a + 3] - w[a], w[a + 4] - w[a + 1], w[a + 5] - w[a + 2]], e2 = [w[a + 6] - w[a], w[a + 7] - w[a + 1], w[a + 8] - w[a + 2]];
+    let x = e1[1] * e2[2] - e1[2] * e2[1], y = e1[2] * e2[0] - e1[0] * e2[2], z = e1[0] * e2[1] - e1[1] * e2[0]; const l = Math.hypot(x, y, z); if (l > 0) { x /= l; y /= l; z /= l; } else { x = 0; y = 0; z = 1; }
+    nrm.set([x, y, z], i * 3); cen.set([(w[a] + w[a + 3] + w[a + 6]) / 3, (w[a + 1] + w[a + 4] + w[a + 7]) / 3, (w[a + 2] + w[a + 5] + w[a + 8]) / 3], i * 3);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(w, 3));
+  TB = { n, w, nrm, cen, pid: PID, obj: OBJ, pi: PI, init: Int16Array.from(INIT), own: Int16Array.from(INIT), adj: null, pick: new THREE.Mesh(g, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })) };
+  return TB;
+}
+function ensureAdj() {                                                      // edge adjacency; vertices welded by position so unwelded STL-style meshes still connect
+  if (TB.adj) return TB.adj; const n = TB.n, q = modelSize * 1e-5, vid = new Int32Array(3 * n), map = new Map(); let nv = 0;
+  for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) { const a = i * 9 + k * 3, key = Math.round(TB.w[a] / q) + ',' + Math.round(TB.w[a + 1] / q) + ',' + Math.round(TB.w[a + 2] / q); let v = map.get(key); if (v === undefined) { v = nv++; map.set(key, v); } vid[3 * i + k] = v; }
+  const em = new Map(), adj = Array.from({ length: n }, () => []);
+  for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) { const a = vid[3 * i + k], b = vid[3 * i + (k + 1) % 3], key = a < b ? a * nv + b : b * nv + a, l = em.get(key); if (l) { for (const j of l) { adj[i].push(j); adj[j].push(i); } l.push(i); } else em.set(key, [i]); }
+  return (TB.adj = adj);
+}
+function flood(seed, deg) {                                                 // connected triangles whose normal is within deg of the SEED's normal
+  const adj = ensureAdj(), N = TB.nrm, cs = Math.cos(deg * Math.PI / 180) - 1e-9, sx = N[seed * 3], sy = N[seed * 3 + 1], sz = N[seed * 3 + 2], seen = new Uint8Array(TB.n), st = [seed], out = []; seen[seed] = 1;
+  while (st.length) { const i = st.pop(); out.push(i); for (const j of adj[i]) if (!seen[j]) { seen[j] = 1; if (N[j * 3] * sx + N[j * 3 + 1] * sy + N[j * 3 + 2] * sz >= cs) st.push(j); } }
+  return out;
+}
+const texIndex = t => textures.indexOf(t);
+const projOn = t => !!(t.proj && t.proj.type !== 'keep');
+function frameOf(t) { const f = t.proj, e = new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().fromArray(f.quat)).elements; return { pos: f.pos, rot: [e[0], e[1], e[2], e[4], e[5], e[6], e[8], e[9], e[10]], size: f.scale.map(s => s * modelSize) }; }
+const undoS = [], redoS = [];
+function updUR() { $('#undo').disabled = !undoS.length; $('#redo').disabled = !redoS.length; }
+const snap = () => ({ own: TB.own.slice(), n: textures.length, rem: textures.map(t => t.removed), rec: textures.map(t => t.rec) });
+function pushUndo() { if (!TB) return; undoS.push(snap()); if (undoS.length > 30) undoS.shift(); redoS.length = 0; updUR(); }
+function stepUR(from, to) {
+  if (!TB || !from.length) return; to.push(snap()); const s = from.pop(); TB.own = s.own;
+  textures.forEach((t, i) => { t.removed = i < s.n ? s.rem[i] : true; if (i < s.n && s.rec[i] && s.rec[i] !== t.rec) useRec(t, s.rec[i]); });
+  markDirty(); updUR(); afterStructure();
+}
+function resetSel(c) { if (!TB) return; for (let i = 0; i < TB.n; i++) { if (TB.init[i] === c) TB.own[i] = c; else if (TB.own[i] === c) TB.own[i] = TB.init[i]; } }
+function revertAdded(c) { if (!TB) return false; let any = false; for (let i = 0; i < TB.n; i++) if (TB.own[i] === c && TB.init[i] !== c) { TB.own[i] = TB.init[i]; any = true; } return any; }
+
+// ---- overlays: selected triangles are drawn on top of the loaded model (polygon offset), so nothing in the loaded meshes is edited
+const overlays = {}, hlOn = () => $('#hl').checked;
+function overlay(key, tex) {
+  if (overlays[key]) return overlays[key]; const po = { flatShading: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 };
+  const m = new THREE.Mesh(new THREE.BufferGeometry(), tex ? new THREE.MeshPhongMaterial({ map: tex, ...po }) : new THREE.MeshPhongMaterial({ color: 0xffffff, ...po })); m.frustumCulled = false; m.renderOrder = 2; scene.add(m); return (overlays[key] = m);
+}
+function setOverlay(m, pos, uv) { const g = m.geometry; g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); if (uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeBoundingSphere(); m.visible = pos.length > 0; }
+function refreshOverlays() {
+  if (!TB) return; const n = TB.n, white = [];
+  textures.forEach((t, c) => {
+    if (t.removed) { if (overlays[c]) overlays[c].visible = false; t.projUV = null; t.projIdx = null; return; }
+    const m = t.three[0] ? overlay(c, t.three[0]) : null; t.projUV = null; t.projIdx = null; if (!m) return;
+    m.material.emissive.setHex(hlOn() ? 0x2848c8 : 0x000000); m.material.emissiveIntensity = 0.18;
+    if (!projOn(t) && !hlOn()) { m.visible = false; return; }
+    const po = projOn(t), fr = po ? frameOf(t) : null, pos = [], uv = [], idx = new Int32Array(n).fill(-1);
+    for (let i = 0; i < n; i++) if (TB.own[i] === c) {
+      const a = i * 9, tri = [[TB.w[a], TB.w[a + 1], TB.w[a + 2]], [TB.w[a + 3], TB.w[a + 4], TB.w[a + 5]], [TB.w[a + 6], TB.w[a + 7], TB.w[a + 8]]]; idx[i] = uv.length / 6 | 0; for (let k = 0; k < 9; k++) pos.push(TB.w[a + k]);
+      if (po) uv.push(...projectTriangle(t.proj.type, fr, tri)); else { const g = groupById[TB.pid[i]], pi = TB.pi[i]; uv.push(...g.coords[pi[0]], ...g.coords[pi[1]], ...g.coords[pi[2]]); }   // not projected: the file's own UVs
+    }
+    // uv has 6 numbers per triangle: row index = uv.length/6 before the push
+    setOverlay(m, pos, uv); t.projUV = [{ uv: Float32Array.from(uv) }]; t.projIdx = idx;
+  });
+  for (let i = 0; i < n; i++) if (TB.own[i] === -1) { const a = i * 9; for (let k = 0; k < 9; k++) white.push(TB.w[a + k]); }
+  setOverlay(overlay('w', null), white, null);
+  live().forEach(applyPreview); if (cur) { drawUV(); updateSelCount(); } render();
+}
+function updateSelCount() { if (listOpen) texList(); if (!cur) { $('#selcount').textContent = ''; return; } if (!TB) { $('#selcount').textContent = `${cur.tris.toLocaleString()} triangles use this texture`; return; } const c = texIndex(cur); let k = 0; for (let i = 0; i < TB.n; i++) if (TB.own[i] === c) k++; $('#selcount').textContent = `${k.toLocaleString()} of ${TB.n.toLocaleString()} triangles use this texture`; }
+function recompute() { refreshOverlays(); }
+function applySel(idx, add) {
+  if (!cur || cur.removed) return; ensureTB(); markDirty(); const c = texIndex(cur); let needProj = false;
+  for (const i of idx) { if (add) { if (TB.own[i] !== c) { if (TB.init[i] !== c) needProj = true; TB.own[i] = c; } } else if (TB.own[i] === c) TB.own[i] = TB.init[i] === -2 ? -2 : -1; }
+  if (add && needProj && !projOn(cur)) { setProjection(cur, 'box'); say('Added triangles need UVs: switched this texture to a Box projection.'); setTimeout(() => say(''), 3000); } else later();
+}
+let pend = false; const later = () => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; if (cur && cur.proj && cur.proj.pos) saveFrame(cur); refreshOverlays(); }); };
+tc.addEventListener('objectChange', () => { markDirty(); later(); });
+function fitFrame(t) { const b = sceneBox(), c = b.getCenter(new THREE.Vector3()); t.proj.pos = c.toArray(); t.proj.quat = [0, 0, 0, 1]; t.proj.scale = [1, 1, 1]; }
+function setProjection(t, type) {
+  ensureTB(); markDirty(); t.proj = t.proj || { type: 'keep' }; t.proj.type = type;
+  if (type === 'keep' && revertAdded(texIndex(t))) { say('Keep file UVs: triangles added by painting were reverted (they have no file UVs).'); setTimeout(() => say(''), 3500); }
+  if (type !== 'keep' && !t.proj.pos) { fitFrame(t); }
+  if (t === cur) showProjectorUI();
+  recompute(t);
+}
+function showProjectorUI() {
+  if (!cur || cur.removed) { tc.visible = false; tc.enabled = false; projector.visible = false; $('#gimbal').hidden = true; render(); return; }
+  ensureSize(); const on = cur.proj && cur.proj.type !== 'keep'; $('#proj').value = on ? cur.proj.type : 'keep'; $('#gimbal').hidden = !on; tc.visible = !!on; tc.enabled = !!on && tool === 'orbit'; projector.visible = !!on;
+  if (on) { loadFrame(cur); buildHelper(cur.proj.type); }
+  $('#proj').dataset.tip = PROJ_TIP + (on ? ' ' + NOTES[cur.proj.type] : '');
+  render();
+}
+
+{
+  $('#proj').onchange = e => { const t = cur; setProjection(t, e.target.value); if (e.target.value !== 'keep' && !ensureTB().n) { say('Projection is not available for this texture (its triangles could not be resolved).', true); setProjection(t, 'keep'); } };
+  document.querySelectorAll('[data-gm]').forEach(b => b.onclick = () => { tc.setMode(b.dataset.gm); document.querySelectorAll('[data-gm]').forEach(x => x.classList.toggle('on', x === b)); render(); });
+  $('#gfit').onclick = () => { ensureSize(); fitFrame(cur); loadFrame(cur); buildHelper(cur.proj.type); recompute(cur); render(); };
+  const prevSel = $('#texsel').onchange; $('#texsel').onchange = e => { prevSel(e); showProjectorUI(); };
+  const r1 = $('#reset').onclick, r2 = $('#resetall').onclick;
+  $('#reset').onclick = () => { r1(); pushUndo(); resetSel(texIndex(cur)); if (projOn(cur)) setProjection(cur, 'keep'); else refreshOverlays(); };
+  $('#resetall').onclick = () => { r2(); ensureTB(); pushUndo(); markDirty(false); textures.forEach((t, c) => { if (t.isNew) t.removed = true; else { t.removed = false; if (t.rec !== t.rec0) useRec(t, t.rec0); } }); if (cur.removed) cur = live()[0] || cur; textures.forEach((t, c) => { resetSel(c); if (projOn(t)) setProjection(t, 'keep'); }); showProjectorUI(); refreshOverlays(); };
+  $('#texsel').addEventListener('change', updateSelCount);
+  showProjectorUI();
+}
+
+// ---- selection tools: paint (circle brush) and flood fill (normal angle)
+const cvs = renderer.domElement, ring = $('#ring'), addMode = () => document.querySelector('input[name=pmode]:checked').value === 'add';
+function setTool(t) { tool = t; controls.enabled = t === 'orbit'; tc.enabled = t === 'orbit' && !!(cur && !cur.removed && projOn(cur)); ring.hidden = t !== 'paint'; cvs.style.cursor = t === 'orbit' ? '' : 'crosshair'; document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); sizeRing(); }
+function sizeRing() { const r = +$('#bsize').value; ring.style.width = ring.style.height = (2 * r) + 'px'; }
+function bind(rangeId, numId, after) { const r = $('#' + rangeId), nn = $('#' + numId), go = () => { paintRange(r); after && after(); }; r.addEventListener('input', () => { nn.value = r.value; go(); }); nn.addEventListener('input', () => { if (isFinite(+nn.value)) { r.value = nn.value; go(); } }); r.addEventListener('dblclick', () => { r.value = nn.value = r.dataset.def; go(); }); go(); }
+function segDist2(px, py, ax, ay, bx, by) { const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy; let t = l2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / l2 : 0; t = t < 0 ? 0 : t > 1 ? 1 : t; const qx = ax + t * dx - px, qy = ay + t * dy - py; return qx * qx + qy * qy; }
+function brush(e) {                                                                                  // selects every triangle the brush circle touches (not only those whose centre is inside it)
+  ensureTB(); const rc = cvs.getBoundingClientRect(), px = e.clientX - rc.left, py = e.clientY - rc.top, r = +$('#bsize').value, r2 = r * r, front = $('#front').checked, W = TB.w;
+  camera.updateMatrixWorld(); const E = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).elements, cp = camera.position, C = TB.cen, N = TB.nrm, out = [], sxv = [0, 0, 0], syv = [0, 0, 0];
+  for (let i = 0; i < TB.n; i++) {
+    if (front && (cp.x - C[3 * i]) * N[3 * i] + (cp.y - C[3 * i + 1]) * N[3 * i + 1] + (cp.z - C[3 * i + 2]) * N[3 * i + 2] <= 0) continue;
+    let behind = false, minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
+    for (let k = 0; k < 3; k++) {
+      const x = W[9 * i + 3 * k], y = W[9 * i + 3 * k + 1], z = W[9 * i + 3 * k + 2], w = E[3] * x + E[7] * y + E[11] * z + E[15]; if (w <= 0) { behind = true; break; }
+      const sx = ((E[0] * x + E[4] * y + E[8] * z + E[12]) / w * 0.5 + 0.5) * rc.width, sy = (1 - ((E[1] * x + E[5] * y + E[9] * z + E[13]) / w * 0.5 + 0.5)) * rc.height;
+      sxv[k] = sx; syv[k] = sy; if (sx < minx) minx = sx; if (sx > maxx) maxx = sx; if (sy < miny) miny = sy; if (sy > maxy) maxy = sy;
+    }
+    if (behind) {                                                                                      // a corner is behind the camera: fall back to the centre point
+      const x = C[3 * i], y = C[3 * i + 1], z = C[3 * i + 2], w = E[3] * x + E[7] * y + E[11] * z + E[15]; if (w <= 0) continue;
+      const dx = ((E[0] * x + E[4] * y + E[8] * z + E[12]) / w * 0.5 + 0.5) * rc.width - px, dy = (1 - ((E[1] * x + E[5] * y + E[9] * z + E[13]) / w * 0.5 + 0.5)) * rc.height - py; if (dx * dx + dy * dy <= r2) out.push(i); continue;
+    }
+    if (maxx < px - r || minx > px + r || maxy < py - r || miny > py + r) continue;                  // bounding box misses the circle
+    let hit = false;
+    for (let k = 0; k < 3 && !hit; k++) { const dx = sxv[k] - px, dy = syv[k] - py; if (dx * dx + dy * dy <= r2) hit = true; }                         // a corner inside the circle
+    for (let k = 0; k < 3 && !hit; k++) { const j = (k + 1) % 3; if (segDist2(px, py, sxv[k], syv[k], sxv[j], syv[j]) <= r2) hit = true; }                // an edge crosses the circle
+    if (!hit) { const d1 = (px - sxv[1]) * (syv[0] - syv[1]) - (sxv[0] - sxv[1]) * (py - syv[1]), d2 = (px - sxv[2]) * (syv[1] - syv[2]) - (sxv[1] - sxv[2]) * (py - syv[2]), d3 = (px - sxv[0]) * (syv[2] - syv[0]) - (sxv[2] - sxv[0]) * (py - syv[0]);
+      hit = !(((d1 < 0) || (d2 < 0) || (d3 < 0)) && ((d1 > 0) || (d2 > 0) || (d3 > 0))); }                                                            // the circle centre is inside the triangle
+    if (hit) out.push(i);
+  }
+  if (out.length) applySel(out, addMode());
+}
+function floodAt(e) {
+  ensureTB(); const rc = cvs.getBoundingClientRect(), rcst = new THREE.Raycaster(); rcst.setFromCamera(new THREE.Vector2((e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1), camera);
+  const h = rcst.intersectObject(TB.pick, false)[0]; if (!h) { say('Click on the model to pick a triangle.'); setTimeout(() => say(''), 1800); return; }
+  pushUndo(); const list = flood(h.faceIndex, +$('#fang').value); applySel(list, addMode()); say(`${list.length.toLocaleString()} triangles within ${$('#fang').value}° of the clicked triangle.`); setTimeout(() => say(''), 2500);
+}
+{
+  document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
+  bind('bsize', 'bsizen', sizeRing); bind('fang', 'fangn'); sizeRing();
+  cvs.addEventListener('pointerdown', e => { if (tool === 'orbit' || e.button !== 0 || !cur || cur.removed) return; e.preventDefault(); cvs.setPointerCapture(e.pointerId); if (tool === 'paint') { ensureTB(); pushUndo(); painting = true; brush(e); } else floodAt(e); });
+  cvs.addEventListener('pointermove', e => { if (tool === 'paint') { const rc = cvs.getBoundingClientRect(); ring.style.left = (e.clientX - rc.left) + 'px'; ring.style.top = (e.clientY - rc.top) + 'px'; } if (painting) brush(e); });
+  const stop = () => { painting = false; }; cvs.addEventListener('pointerleave', () => { if (tool === 'paint' && !painting) ring.style.left = '-100px'; }); cvs.addEventListener('pointerup', stop); cvs.addEventListener('pointercancel', stop);
+  $('#undo').onclick = () => stepUR(undoS, redoS); $('#redo').onclick = () => stepUR(redoS, undoS);
+  $('#selclear').onclick = () => { if (!cur || cur.removed) return; ensureTB(); pushUndo(); const c = texIndex(cur); for (let i = 0; i < TB.n; i++) if (TB.own[i] === c) TB.own[i] = TB.init[i] === -2 ? -2 : -1; markDirty(); later(); };      // cleared for THIS texture only: white (or the file's original non-texture material), never another texture
+  $('#selreset').onclick = () => { ensureTB(); pushUndo(); resetSel(texIndex(cur)); later(); };
+  updateSelCount();
+  $('#hl').addEventListener('change', () => { ensureTB(); refreshOverlays(); });
+  updateSelCount();
+}
+
+
+// ---- texture manager: swap the picture of a texture, remove a texture, add another (the list in the Texture section)
+const MAXPX = 4096; let fileMode = null, newN = 0;
+const triCount = c => { let k = 0; if (!TB) return textures[c].tris; for (let i = 0; i < TB.n; i++) if (TB.own[i] === c) k++; return k; };
+// dispose() first in useRec: the GPU copy of the old picture cannot be re-specified in place
+function useRec(t, rec) { t.rec = rec; t.img = rec.img; t.name = rec.name; t.three.forEach(tx => { tx.dispose(); tx.image = rec.img; tx.needsUpdate = true; }); if (t === cur) drawUV(); texList(); render(); }
+function texList() {
+  const L = $('#texlist'), sel = $('#texsel'); sel.textContent = ''; L.textContent = '';
+  const lv = live(); textures.forEach((t, i) => { const o = document.createElement('option'); o.value = i; o.textContent = t.name; o.hidden = t.removed; sel.appendChild(o); });
+  if (cur && !cur.removed) sel.value = texIndex(cur);
+  $('#texbtn').textContent = ''; const bt = document.createElement('span'); bt.className = 'nm'; bt.textContent = lv.length && cur && !cur.removed ? cur.name : 'No texture'; $('#texbtn').append(thumb(cur && !cur.removed ? cur : null), bt);
+  textures.forEach((t, i) => {
+    if (t.removed) return; const d = document.createElement('div'); d.className = 'titem' + (t === cur ? ' sel' : ''); d.setAttribute('role', 'option'); d.dataset.i = i;
+    const pick = document.createElement('button'); pick.className = 'pick'; pick.append(thumb(t)); const tx = document.createElement('span'); tx.innerHTML = '<b></b><small></small>'; tx.firstChild.textContent = t.name; tx.lastChild.textContent = `${triCount(i).toLocaleString()} triangles`; pick.append(tx);
+    pick.onclick = () => { $('#texsel').value = i; $('#texsel').onchange({ target: $('#texsel') }); updateSelCount(); texList(); closeList(); };
+    const sw = btnIc('swap', 'Swap this texture for another image. Keeps its triangles, projection and transform.', 'Swap texture ' + t.name); sw.dataset.act = 'swap'; sw.onclick = e => { e.stopPropagation(); fileMode = { mode: 'swap', t }; $('#texfile').click(); };
+    const rm = btnIc('x', 'Remove this texture. Its triangles go back to white or their original material.', 'Remove texture ' + t.name); rm.classList.add('rm'); rm.dataset.act = 'remove'; rm.onclick = e => { e.stopPropagation(); removeTexture(t); };
+    d.append(pick, sw, rm); L.appendChild(d);
+  });
+  const add = document.createElement('div'); add.className = 'titem add'; const ab = document.createElement('button'); ab.className = 'pick'; ab.dataset.act = 'add'; ab.dataset.tip = 'Upload another texture image, then paint or flood the triangles it should cover.'; ab.innerHTML = '<svg class="i"><use href="#i-plus"/></svg><span>Add New</span>'; ab.onclick = () => { fileMode = { mode: 'add' }; $('#texfile').click(); }; add.appendChild(ab); L.appendChild(add);
+  const none = !lv.length; $('#texdep').hidden = none; $('#texrow').hidden = none; $('#texempty').hidden = !none;
+}
+function thumb(t) { const d = document.createElement('span'); d.className = 'thumb'; if (t && t.rec) d.style.backgroundImage = `url("${t.rec.url}")`; return d; }
+function btnIc(icon, tip, label) { const b = document.createElement('button'); b.className = 'ic'; b.type = 'button'; b.dataset.tip = tip; b.setAttribute('aria-label', label); b.innerHTML = `<svg class="i"><use href="#i-${icon}"/></svg>`; return b; }
+function closeList() { listOpen = false; $('#texlist').hidden = true; $('#texbtn').setAttribute('aria-expanded', 'false'); }
+function afterStructure() {                                                  // refresh everything that depends on which textures exist
+  if (!cur || cur.removed) cur = live()[0] || cur; texList();
+  if (live().length) { syncUI(); showProjectorUI(); } else { tc.visible = false; tc.enabled = false; projector.visible = false; $('#gimbal').hidden = true; }
+  updateSelCount(); refreshOverlays();
+}
+function removeTexture(t) {
+  ensureTB(); pushUndo(); const c = texIndex(t); let k = 0;
+  for (let i = 0; i < TB.n; i++) if (TB.own[i] === c) { TB.own[i] = TB.init[i] === c ? -1 : TB.init[i]; k++; }
+  if (t === cur && projOn(t)) saveFrame(t); t.removed = true; markDirty(); closeList(); afterStructure();
+  say(`Removed ${t.name}${k ? ' and ' + k.toLocaleString() + ' triangle' + (k > 1 ? 's' : '') + ' of it' : ''}.`); setTimeout(() => say(''), 2500);
+}
+async function fileToRec(file) {                                             // any browser image -> PNG on white, capped at 4096 px
+  const u0 = URL.createObjectURL(file), im = new Image(); im.src = u0; await im.decode(); const k = Math.min(1, MAXPX / Math.max(im.naturalWidth, im.naturalHeight)), w = Math.max(1, Math.round(im.naturalWidth * k)), h = Math.max(1, Math.round(im.naturalHeight * k));
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d', { willReadFrequently: true }); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(im, 0, 0, w, h); URL.revokeObjectURL(u0);
+  const d = g.getImageData(0, 0, w, h).data; let grey = 0, step = Math.max(1, Math.floor(d.length / 4 / 20000)) * 4, seen = 0;
+  for (let i = 0; i < d.length; i += step) { seen++; const v = d[i]; if (v > 24 && v < 231 || Math.abs(d[i] - d[i + 1]) > 24 || Math.abs(d[i + 1] - d[i + 2]) > 24) grey++; }
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png')), bytes = new Uint8Array(await blob.arrayBuffer()), url = URL.createObjectURL(blob), img = new Image(); img.src = url; await img.decode();
+  return { bytes, mime: 'image/png', name: file.name.replace(/\.[^.]+$/, '') + '.png', url, img, mono: grey / Math.max(1, seen) < 0.1 };
+}
+function addTexture(rec) {
+  ensureTB(); pushUndo(); const n = ++newN, tx = new THREE.Texture(rec.img); tx.colorSpace = THREE.SRGBColorSpace; tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.magFilter = THREE.NearestFilter; tx.needsUpdate = true;
+  const t = { id: 'new' + n, path: '/3D/Textures/added_' + n + '.png', isNew: true, groups: [], tris: 0, state: { rot: 0, du: 0, dv: 0, scale: 1 }, three: [tx], name: rec.name, removed: false, img: rec.img, rec, rec0: rec };
+  textures.push(t); cur = t; texList(); setProjection(t, 'box'); afterStructure(); markDirty(); closeList();
+  say(`Added ${t.name}. Use Paint or Flood to choose where it goes.`); setTimeout(() => say(''), 3500);
+}
+async function onFile(file) {
+  const m = fileMode; fileMode = null; if (!file || !m) return;
+  try {
+    const rec = await fileToRec(file);
+    if (m.mode === 'swap') { if (m.t.removed) return; ensureTB(); pushUndo(); useRec(m.t, rec); markDirty(); texList(); say(`Swapped to ${rec.name}.`); }
+    else addTexture(rec);
+    if (!rec.mono) { say('This picture has grey or colour areas. Parts print in black and white only; run it through the halftone step first for best results.'); setTimeout(() => say(''), 5000); } else setTimeout(() => say(''), 2500);
+  } catch (e) { say('Could not read that image: ' + (e.message || e), true); }
+}
+{
+  $('#texfile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; onFile(f); };
+  $('#texbtn').onclick = () => { listOpen = !listOpen; $('#texlist').hidden = !listOpen; $('#texbtn').setAttribute('aria-expanded', String(listOpen)); };
+  document.addEventListener('pointerdown', e => { if (listOpen && !e.target.closest('#texdd')) closeList(); }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && listOpen) closeList(); });
+  texList();
+}
+
+function fixPackage(out, ops, keep) {                                      // relationships + content types follow the texture files
+  const dec = new TextDecoder(), enc = new TextEncoder(), norm = x => '/' + String(x).replace(/^\//, '');
+  const dir = modelPath.replace(/[^/]*$/, ''), relPath = dir + '_rels/' + modelPath.split('/').pop() + '.rels', RT = 'http://schemas.microsoft.com/3dmanufacturing/2013/01/3dtexture';
+  if (ops.length) {
+    const rd = new DOMParser().parseFromString(files[relPath] || out[relPath] ? dec.decode(out[relPath] || files[relPath]) : '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>', 'application/xml'), rr = rd.documentElement;
+    for (const [op, p] of ops) {
+      if (op === 'drop') { if (keep.has(p)) continue; Array.from(rr.children).filter(r => norm(r.getAttribute('Target')) === p).forEach(r => rr.removeChild(r)); }
+      else if (!Array.from(rr.children).some(r => norm(r.getAttribute('Target')) === p)) { const r = rd.createElementNS(rr.namespaceURI, 'Relationship'); let n = 1; const used = new Set(Array.from(rr.children).map(c => c.getAttribute('Id'))); while (used.has('rel' + n)) n++; r.setAttribute('Target', p); r.setAttribute('Id', 'rel' + n); r.setAttribute('Type', RT); rr.appendChild(r); }
+    }
+    out[relPath] = enc.encode('<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(rr));
+  }
+  if (out['[Content_Types].xml'] && Object.keys(out).some(k => /\.png$/i.test(k))) {
+    const cd = new DOMParser().parseFromString(dec.decode(out['[Content_Types].xml']), 'application/xml'), ct = cd.documentElement;
+    if (!Array.from(ct.children).some(c => (c.getAttribute('Extension') || '').toLowerCase() === 'png') && !Array.from(ct.children).some(c => /\.png$/i.test(c.getAttribute('PartName') || ''))) { const d = cd.createElementNS(ct.namespaceURI, 'Default'); d.setAttribute('Extension', 'png'); d.setAttribute('ContentType', 'image/png'); ct.insertBefore(d, ct.firstChild); out['[Content_Types].xml'] = enc.encode('<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(ct)); }
+  }
+}
+function res0ns() { const r = byLocal(xmlDoc, 'resources')[0], p = r && r.lookupPrefix ? r.lookupPrefix('http://schemas.microsoft.com/3dmanufacturing/material/2015/02') : null; return p || null; }
+// ---- download: bake the adjusted UVs into tex2coord and write a new 3MF
+function bake() {
+  if (TB) { if (cur && cur.proj && cur.proj.pos) saveFrame(cur); refreshOverlays(); }
+  const doc = xmlDoc.cloneNode(true), changed = new Set(), tex = {}; byLocal(doc, 'texture2d').forEach(t => { tex[t.getAttribute('id')] = t; });
+  const res0 = byLocal(doc, 'resources')[0], ns0 = byLocal(xmlDoc, 'texture2d')[0] || { namespaceURI: 'http://schemas.microsoft.com/3dmanufacturing/material/2015/02', prefix: res0ns() }, NG = {}, BID = {};
+  const nextId = () => { let mx = 0; Array.from(res0.children).forEach(c => { const v = parseInt(c.getAttribute('id'), 10); if (v > mx) mx = v; }); byLocal(doc, 'object').forEach(c => { const v = parseInt(c.getAttribute('id'), 10); if (v > mx) mx = v; }); return String(mx + 1); };
+  const mk = (nm, id) => { const e = doc.createElementNS(ns0.namespaceURI, ns0.prefix ? ns0.prefix + ':' + nm : nm); e.setAttribute('id', id); return e; };
+  const newFiles = {}, dropFiles = new Set(), relOps = [], deadG = new Set();
+  // textures that were added: create their texture2d + texture2dgroup (inserted first, so they are defined before use)
+  const added = textures.filter(t => t.isNew && !t.removed);
+  added.slice().reverse().forEach(t => {
+    const gid = nextId(), g = mk('texture2dgroup', gid), tid = (parseInt(gid, 10) + 1) + '', e = mk('texture2d', tid); g.setAttribute('texid', tid); e.setAttribute('path', t.path); e.setAttribute('contenttype', 'image/png'); e.setAttribute('tilestyleu', 'wrap'); e.setAttribute('tilestylev', 'wrap'); e.setAttribute('filter', 'nearest');
+    res0.insertBefore(g, res0.firstChild); res0.insertBefore(e, res0.firstChild); tex[t.id] = e; NG[t.id] = g; BID[t.id] = tid; newFiles[t.path.replace(/^\//, '')] = t.rec.bytes; relOps.push(['add', t.path]);
+  });
+  textures.forEach(t => {                                                    // removed textures leave the file; swapped ones get the new picture
+    if (t.isNew || !tex[t.id]) return;
+    if (t.removed) { byLocal(doc, 'texture2dgroup').filter(g => g.getAttribute('texid') === t.id).forEach(g => { deadG.add(g.getAttribute('id')); g.parentNode.removeChild(g); }); tex[t.id].parentNode.removeChild(tex[t.id]); dropFiles.add(t.path); relOps.push(['drop', t.path]); }
+    else if (t.rec !== t.rec0) { const np = '/3D/Textures/swap_' + t.id + '.png'; tex[t.id].setAttribute('path', np); tex[t.id].setAttribute('contenttype', 'image/png'); newFiles[np.slice(1)] = t.rec.bytes; dropFiles.add(t.path); relOps.push(['drop', t.path], ['add', np]); changed.add(t.id); }
+  });
+  const keepPaths = new Set(byLocal(doc, 'texture2d').map(e => e.getAttribute('path')));
+  if (TB) {                                                                  // apply triangle ownership: projected triangles get their own tex2coord, removed ones go white
+    const G = {}; byLocal(doc, 'texture2dgroup').forEach(g => { G[g.getAttribute('id')] = { el: g, n: byLocal(g, 'tex2coord').length }; });
+    const groupFor = t => t.isNew ? NG[t.id].getAttribute('id') : t.groups[0].el.getAttribute('id');
+    const res = res0; let whiteId = null;
+    const white = () => {
+      if (whiteId) return whiteId;
+      whiteId = nextId(); const bm = doc.createElementNS(res.namespaceURI, res.prefix ? res.prefix + ':basematerials' : 'basematerials'), b = doc.createElementNS(res.namespaceURI, res.prefix ? res.prefix + ':base' : 'base');
+      bm.setAttribute('id', whiteId); b.setAttribute('name', 'White'); b.setAttribute('displaycolor', '#FFFFFF'); bm.appendChild(b); res.insertBefore(bm, res.firstChild); return whiteId;
+    };
+    let k = 0;
+    byLocal(doc, 'object').forEach(o => {
+      const id = o.getAttribute('id'); if (!inst[id] || !o.getElementsByTagNameNS('*', 'mesh')[0]) return;
+      byLocal(o, 'triangle').forEach(tr => {
+        const i = k++, ow = TB.own[i], it = TB.init[i];
+        if (ow >= 0 && projOn(textures[ow])) {
+          const t = textures[ow], row = t.projIdx ? t.projIdx[i] : -1; if (row < 0) return;
+          const pid = it === ow ? tr.getAttribute('pid') || o.getAttribute('pid') : groupFor(t), g = G[pid], base = row * 6, idx = [];
+          for (let c = 0; c < 3; c++) { const e = doc.createElementNS(g.el.namespaceURI, g.el.prefix ? g.el.prefix + ':tex2coord' : 'tex2coord'); e.setAttribute('u', t.projUV[0].uv[base + 2 * c].toFixed(6)); e.setAttribute('v', t.projUV[0].uv[base + 2 * c + 1].toFixed(6)); g.el.appendChild(e); idx.push(g.n++); }
+          tr.setAttribute('pid', pid); tr.setAttribute('p1', idx[0]); tr.setAttribute('p2', idx[1]); tr.setAttribute('p3', idx[2]); changed.add(t.id);
+        } else if (ow === -1) { tr.setAttribute('pid', white()); tr.setAttribute('p1', '0'); tr.removeAttribute('p2'); tr.removeAttribute('p3'); if (it >= 0) changed.add(textures[it].id); }
+      });
+    });
+  }
+  if (deadG.size) {                                                          // nothing may still point at a removed texture
+    let wid = null; const w = () => wid || (wid = (() => { const id = nextId(), cm = n => doc.createElementNS(res0.namespaceURI, res0.prefix ? res0.prefix + ':' + n : n), bm = cm('basematerials'), b = cm('base'); bm.setAttribute('id', id); b.setAttribute('name', 'White'); b.setAttribute('displaycolor', '#FFFFFF'); bm.appendChild(b); res0.insertBefore(bm, res0.firstChild); return id; })());
+    const fix = () => { byLocal(doc, 'triangle').forEach(tr => { if (deadG.has(tr.getAttribute('pid'))) { tr.setAttribute('pid', w()); tr.setAttribute('p1', '0'); tr.removeAttribute('p2'); tr.removeAttribute('p3'); } }); byLocal(doc, 'object').forEach(o => { if (deadG.has(o.getAttribute('pid'))) { o.removeAttribute('pid'); o.removeAttribute('pindex'); } }); };
+    fix();
+  }
+  textures.forEach(t => {
+    if (t.removed || (!projOn(t) && uvIsIdentity(t.state))) return; const m = uvAffine(t.state); changed.add(t.id); const bid = BID[t.id] || t.id;
+    byLocal(doc, 'texture2dgroup').filter(g => g.getAttribute('texid') === bid).forEach(g => byLocal(g, 'tex2coord').forEach(c => { const r = uvApply(m, parseFloat(c.getAttribute('u')), parseFloat(c.getAttribute('v'))); c.setAttribute('u', r[0].toFixed(6)); c.setAttribute('v', r[1].toFixed(6)); }));
+    tex[t.id].setAttribute('tilestyleu', 'wrap'); tex[t.id].setAttribute('tilestylev', 'wrap');            // transformed UVs may leave 0..1: tile instead of clamping
+  });
+  const out = {}; for (const k of Object.keys(files)) if (!(dropFiles.has('/' + k) && !keepPaths.has('/' + k))) out[k] = files[k];
+  Object.assign(out, newFiles); fixPackage(out, relOps, keepPaths);
+  out[modelPath] = new TextEncoder().encode('<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(doc.documentElement));
+  return { bytes: fflate.zipSync(out, { level: 6 }), changed: Array.from(changed) };
+}
+$('#dl') && ($('#dl').onclick = () => {
+  const r = bake(), name = META.filename.replace(/\.3mf$/i, '') + '_uv.3mf', a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([r.bytes], { type: 'model/3mf' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); markDirty(false);
+  $('#dlmsg').textContent = r.changed.length ? `Saved ${name} with adjusted UVs for texture ${r.changed.join(', ')}.` : `Saved ${name} (no adjustments: identical UVs).`;
+});
+// ---- tooltips (one shared element, so nothing is clipped by scrolling panels)
+const tip = $('#tip'); let tipT = 0, tipEl = null;
+function showTip(el) {
+  const t = el.dataset.tip; if (!t) return; tip.textContent = t; const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight, inPanel = !!el.closest('aside');
+  let x = inPanel ? r.left - w - 10 : r.left, y = inPanel ? r.top + r.height / 2 - h / 2 : r.bottom + 8; if (x < 8) { x = Math.min(r.left, innerWidth - w - 8); y = r.bottom + 8; if (y + h > innerHeight - 8) y = r.top - h - 8; }
+  tip.style.left = Math.max(8, Math.min(x, innerWidth - w - 8)) + 'px'; tip.style.top = Math.max(8, Math.min(y, innerHeight - h - 8)) + 'px'; tip.classList.add('show');
+}
+function hideTip() { clearTimeout(tipT); tipEl = null; tip.classList.remove('show'); }
+document.addEventListener('mouseover', e => { const el = e.target.closest && e.target.closest('[data-tip]'); if (el === tipEl) return; hideTip(); if (el) { tipEl = el; tipT = setTimeout(() => showTip(el), 350); } });
+document.addEventListener('mouseleave', hideTip); document.addEventListener('pointerdown', hideTip, true); document.addEventListener('scroll', hideTip, true);
+document.addEventListener('focusin', e => { const el = e.target.closest && e.target.closest('[data-tip]'); if (el && e.target.matches(':focus-visible')) showTip(el); }); document.addEventListener('focusout', hideTip);
+
+// ---- theme, side panel, keyboard shortcuts
+const dark = () => (document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
+try { const th = localStorage.getItem('viewer-theme'); if (th) document.documentElement.dataset.theme = th; } catch (e) { /* storage unavailable */ }
+$('#theme').onclick = () => { const t = dark() ? 'light' : 'dark'; document.documentElement.dataset.theme = t; try { localStorage.setItem('viewer-theme', t); } catch (e) { /* ignore */ } };
+const togglePanel = () => { $('#app').classList.toggle('nopanel'); setTimeout(resize, 220); };
+$('#panelbtn').onclick = togglePanel;
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input[type=number],select,textarea') || e.altKey) return; const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
+  if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? $('#redo').click() : $('#undo').click(); return; } if (mod) return;
+  const hasTex = !!live().length, click = q => { const b = document.querySelector(q); b && b.click(); };
+  if (k === 'o' && hasTex) setTool('orbit'); else if (k === 'p' && hasTex) setTool('paint'); else if (k === 'f' && hasTex) setTool('flood');
+  else if (k === 'x' && hasTex) { const r = document.querySelector('input[name=pmode]:not(:checked)'); r.checked = true; say(addMode() ? 'Mode: Add' : 'Mode: Remove'); }
+  else if ((k === '[' || k === ']') && hasTex) { const v = Math.max(4, Math.min(200, +$('#bsize').value + (k === ']' ? 5 : -5))); $('#bsize').value = $('#bsizen').value = v; paintRange($('#bsize')); sizeRing(); }
+  else if (k === 'w') click('#wire'); else if (k === 'h') togglePanel(); else if ('1234'.includes(k) && k) click(`[data-v="${['iso', 'front', 'top', 'right'][+k - 1]}"]`);
+});
+paintAll();
+// ---- start with the requested projection (e.g. the box projection apply_texture.py wrote into the file)
+if (META.projection && textures.length) {
+  try {
+    cur = textures[0]; $('#texsel').value = 0; setProjection(cur, META.projection.type || 'box');
+    const k = +META.projection.scale; if (k > 0 && k !== 1) { cur.proj.scale = [k, k, k]; showProjectorUI(); refreshOverlays(); }
+    markDirty(false);
+  } catch (e) { /* keep the file's own UVs */ }
+}
+if (META.texture) {                                                          // Dual-Tone Studio: a picture picked next to the model -> new texture, box projection over every triangle
+  (async () => {
+    try {
+      const bin = atob(META.texture.b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      const rec = await fileToRec(new File([u], META.texture.name || 'texture.png', { type: 'image/png' })); addTexture(rec); const c = texIndex(cur);
+      if (TB) { for (let i = 0; i < TB.n; i++) TB.own[i] = c; }
+      const k = +(META.projection && META.projection.scale); if (k > 0 && k !== 1) { cur.proj.scale = [k, k, k]; showProjectorUI(); } refreshOverlays(); undoS.length = 0; redoS.length = 0; updUR(); markDirty(false); say('');
+    } catch (e) { say('Could not load the picture: ' + (e.message || e), true); }
+  })();
+}
+window.__viewer = { texList, removeTexture, addTexture, fileToRec, useRec, live, TB: () => TB, applySel, flood, setTool, brush, floodAt, ensureTB, texIndex, refreshOverlays, setProjection: (i, ty) => { cur = textures[i]; $('#texsel').value = i; setProjection(cur, ty); }, projector, tc, textures, bake, uvAffine, state: () => textures.map(t => ({ id: t.id, state: t.state })), render, scene, camera };
+})();
+</script>
+</body>
+</html>
