@@ -6,7 +6,7 @@ This repository contains only the plugin (built from the development repository)
 
 ## Use
 - **As a plugin:** zip the contents of this repository (or download it as a ZIP) and upload it as a ChatGPT plugin. `plugin.json` is at the root.
-- **Without any install:** open `dual-tone-studio.html` in a browser (also served at the GitHub Pages address of this repository when enabled). Pick a model and a picture; block-colour images are made black/white automatically, photos open the halftone editor first, then the 3D editor.
+- **Without any install:** open `dual-tone-studio.html` in a browser (also served at https://rw-g.github.io/dual-tone-plugin/dual-tone-studio.html). Pick a model and a picture; block-colour images are made black/white automatically, photos open the halftone editor first, then the 3D editor.
 
 ## What is inside
 | Path | What |

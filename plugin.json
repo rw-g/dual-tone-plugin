@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "dual-tone-apply",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "Dual-tone 3D texturing for ChatGPT: halftone any grayscale or colour image to pure black/white, then box-project it over the whole STL/3MF part as an image texture and open an offline 3D editor to refine it (paint or flood-select triangles, move the projector, clear and start fresh).",
   "author": {
     "name": "rw-g"
@@ -22,7 +22,7 @@
       "interface": {
         "displayName": "Dual-Tone Apply",
         "shortDescription": "Dual-tone STL/3MF texturing",
-        "longDescription": "Two skills that work together. Halftone-image intercepts any grayscale or colour image, opens an offline halftone viewer (dot and line screens, error diffusion, Bayer, blue noise, presets) and exports a 1-bit black/white PNG. Dual-tone-apply box-projects any black/white texture (image, QR code, text, logo, pattern or halftone) over the whole STL/3MF part, with no feature recognition, and opens a self-contained Three.js editor with paint / flood triangle selection, projector gimbal, a clear-texture button and adjusted-3MF export. The download also includes dual-tone-studio.html: an offline page that does all of this with no Python (pick a model and a picture, or open a 3MF).",
+        "longDescription": "Two skills that work together. Halftone-image intercepts any grayscale or colour image, opens an offline halftone viewer (dot and line screens, error diffusion, Bayer, blue noise, presets) and exports a 1-bit black/white PNG. Dual-tone-apply box-projects any black/white texture (image, QR code, text, logo, pattern or halftone) over the whole STL/3MF part, with no feature recognition, and opens a self-contained Three.js editor with paint / flood triangle selection, projector gimbal, a clear-texture button and adjusted-3MF export. The download also includes dual-tone-studio.html: an offline page that does all of this with no Python (pick a model and a picture, or open a 3MF): https://rw-g.github.io/dual-tone-plugin/dual-tone-studio.html",
         "developerName": "rw-g",
         "category": "Creativity",
         "brandColor": "#2F6FED",
