@@ -531,7 +531,7 @@ function bake() {
   const mk = (nm, id) => { const e = doc.createElementNS(ns0.namespaceURI, ns0.prefix ? ns0.prefix + ':' + nm : nm); e.setAttribute('id', id); return e; };
   const newFiles = {}, dropFiles = new Set(), relOps = [], deadG = new Set();
   // textures that were added: create their texture2d + texture2dgroup (inserted first, so they are defined before use)
-  const added = textures.filter(t => t.isNew && !t.removed);
+  const added = textures.filter(t => t.isNew && !t.removed && (!TB || TB.own.some(v => v === texIndex(t))));            // a new texture with no triangles is not written (no empty group)
   added.slice().reverse().forEach(t => {
     const gid = nextId(), g = mk('texture2dgroup', gid), tid = (parseInt(gid, 10) + 1) + '', e = mk('texture2d', tid); g.setAttribute('texid', tid); e.setAttribute('path', t.path); e.setAttribute('contenttype', 'image/png'); e.setAttribute('tilestyleu', 'wrap'); e.setAttribute('tilestylev', 'wrap'); e.setAttribute('filter', 'nearest');
     res0.insertBefore(g, res0.firstChild); res0.insertBefore(e, res0.firstChild); tex[t.id] = e; NG[t.id] = g; BID[t.id] = tid; newFiles[t.path.replace(/^\//, '')] = t.rec.bytes; relOps.push(['add', t.path]);
@@ -571,7 +571,7 @@ function bake() {
     fix();
   }
   textures.forEach(t => {
-    if (t.removed || (!projOn(t) && uvIsIdentity(t.state))) return; const m = uvAffine(t.state); changed.add(t.id); const bid = BID[t.id] || t.id;
+    if (t.removed || !tex[t.id] || (!projOn(t) && uvIsIdentity(t.state))) return; const m = uvAffine(t.state); changed.add(t.id); const bid = BID[t.id] || t.id;
     byLocal(doc, 'texture2dgroup').filter(g => g.getAttribute('texid') === bid).forEach(g => byLocal(g, 'tex2coord').forEach(c => { const r = uvApply(m, parseFloat(c.getAttribute('u')), parseFloat(c.getAttribute('v'))); c.setAttribute('u', r[0].toFixed(6)); c.setAttribute('v', r[1].toFixed(6)); }));
     tex[t.id].setAttribute('tilestyleu', 'wrap'); tex[t.id].setAttribute('tilestylev', 'wrap');            // transformed UVs may leave 0..1: tile instead of clamping
   });
@@ -625,9 +625,9 @@ if (META.texture) {                                                          // 
   (async () => {
     try {
       const bin = atob(META.texture.b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-      const rec = await fileToRec(new File([u], META.texture.name || 'texture.png', { type: 'image/png' })); addTexture(rec); const c = texIndex(cur);
-      if (TB) { for (let i = 0; i < TB.n; i++) TB.own[i] = c; }
-      const k = +(META.projection && META.projection.scale); if (k > 0 && k !== 1) { cur.proj.scale = [k, k, k]; showProjectorUI(); } refreshOverlays(); undoS.length = 0; redoS.length = 0; updUR(); markDirty(false); say('');
+      const had = live().length, rec = await fileToRec(new File([u], META.texture.name || 'texture.png', { type: 'image/png' })); addTexture(rec); const c = texIndex(cur);
+      if (TB && !had) { for (let i = 0; i < TB.n; i++) TB.own[i] = c; }                           // a model that already has textures keeps them: the new one starts with NO triangles
+      const k = +(META.projection && META.projection.scale); if (k > 0 && k !== 1) { cur.proj.scale = [k, k, k]; showProjectorUI(); } refreshOverlays(); undoS.length = 0; redoS.length = 0; updUR(); markDirty(false); say(had ? `Added ${cur.name}. Your existing textures are kept: use Paint or Flood to place it.` : '');
     } catch (e) { say('Could not load the picture: ' + (e.message || e), true); }
   })();
 }

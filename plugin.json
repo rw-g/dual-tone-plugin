@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "dual-tone-apply",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "Dual-tone 3D texturing for ChatGPT: halftone any grayscale or colour image to pure black/white, then box-project it over the whole STL/3MF part as an image texture and open an offline 3D editor to refine it (paint or flood-select triangles, move the projector, clear and start fresh).",
   "author": {
     "name": "rw-g"

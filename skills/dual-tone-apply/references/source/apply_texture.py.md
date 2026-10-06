@@ -11,7 +11,8 @@ No feature recognition: every triangle takes the texture from the face of the bo
 move / rotate / scale the projector, switch projection, or clear the texture and start fresh).
 
 Usage:  apply_texture.py model.stl|model.3mf texture.png [-o out.3mf] [--tile-mm N] [--no-viewer] [--json]
-Writes out.3mf (geometry unchanged, texture on every triangle) and out_viewer.html (unless --no-viewer). Exit 0 ok; 2 unreadable model / texture; 3 texture is not black/white (run halftone-image/scripts/prepare_image.py); 1 the written 3MF failed its own checks.
+Writes out.3mf (geometry unchanged, texture on every triangle) and out_viewer.html (unless --no-viewer). Exit 0 ok; 2 unreadable model / texture; 3 texture is not black/white (run halftone-image/scripts/prepare_image.py); 4 the 3MF already has textures and no editor is available; 1 the written 3MF failed its own checks.
+A 3MF that already has textures is kept as is (copied unchanged); the new picture waits in the 3D editor's texture list with no triangles (Paint / Flood places it).
 Library: apply_texture(model, texture, out=None, tile_mm=None, viewer=True) -> dict"""
 import argparse, json, math, os, struct, sys, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -131,8 +132,33 @@ def write_3mf(path, verts, tris, uvs, png):
         z.writestr("3D/_rels/3dmodel.model.rels", MODEL_RELS); z.writestr("3D/Textures/texture.png", png)
 
 
+class HasTextures(ValueError): pass
+
+
+def count_textures(path):
+    """Number of texture2d resources in a 3MF (0 for STL / unreadable)."""
+    if os.path.splitext(path)[1].lower() != ".3mf": return 0
+    try:
+        with zipfile.ZipFile(path) as z:
+            import re
+            return sum(len(re.findall(rb"<(?:\w+:)?texture2d\b", z.read(n))) for n in z.namelist() if n.lower().endswith(".model"))
+    except (OSError, zipfile.BadZipFile): return 0
+
+
 def apply_texture(model, texture, out=None, tile_mm=None, viewer=True):
-    verts, tris = read_mesh(model); check_black_white(texture); png = read_texture(texture)
+    check_black_white(texture); n_tex = count_textures(model)
+    if n_tex:                                                                                      # keep every existing texture: copy the file unchanged, the editor gets the new picture with NO triangles
+        if not viewer: raise HasTextures(f"the model already has {n_tex} texture{'s' if n_tex > 1 else ''}, which this tool would overwrite. Open the 3MF in the 3D editor (or Dual-Tone Studio), add the new picture there with Add New, place it with Paint or Flood and download the 3MF")
+        import shutil
+        out = out or os.path.splitext(model)[0] + "_textured.3mf"
+        if os.path.abspath(out) != os.path.abspath(model): shutil.copyfile(model, out)
+        res = dict(output=out, existing_textures=n_tex, new_texture_pending=True, projection="box", valid=True, errors=[])
+        try:
+            import make_viewer
+            vp = os.path.splitext(out)[0] + "_viewer.html"; r = make_viewer.make_viewer(out, vp, projection={"type": "box", "scale": 1.0}, texture=texture); res["viewer"] = vp; res["valid"] = r["valid"]; res["errors"] = r["errors"]
+        except (ImportError, OSError): res["viewer_unavailable"] = True
+        return res
+    verts, tris = read_mesh(model); png = read_texture(texture)
     lo = [min(v[i] for v in verts) for i in range(3)]; hi = [max(v[i] for v in verts) for i in range(3)]
     centre = [(lo[i] + hi[i]) / 2 for i in range(3)]; dim = max(hi[i] - lo[i] for i in range(3)) or 1.0; tile = float(tile_mm) if tile_mm else dim
     if tile <= 0: raise ValueError("--tile-mm must be positive")
@@ -156,10 +182,11 @@ def main(argv=None):
     ap.add_argument("model"); ap.add_argument("texture"); ap.add_argument("-o", "--output"); ap.add_argument("--tile-mm", type=float); ap.add_argument("--no-viewer", action="store_true"); ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
     try: r = apply_texture(a.model, a.texture, a.output, a.tile_mm, not a.no_viewer)
+    except HasTextures as e: print(f"apply_texture: {e}", file=sys.stderr); return 4
     except NotBlackWhite as e: print(f"apply_texture: {e}", file=sys.stderr); return 3
     except (OSError, ValueError) as e: print(f"apply_texture: {e}", file=sys.stderr); return 2
     if a.json: print(json.dumps(r, indent=2))
-    else: print(f"textured: {r['output']}" + (f"\nviewer: {r['viewer']}" if "viewer" in r else "\n(the 3D editor files are not available in this environment: deliver the 3MF only and say the editor needs the full plugin)" if r.get("viewer_unavailable") else "") + ("" if r["valid"] else "\nWARNING: the written file has problems: " + ", ".join(r["errors"])))
+    else: print(("kept the model's existing textures; the new picture waits in the editor's texture list with no triangles (Paint or Flood places it)\n" if r.get("new_texture_pending") else "") + f"textured: {r['output']}" + (f"\nviewer: {r['viewer']}" if "viewer" in r else "\n(the 3D editor files are not available in this environment: deliver the 3MF only and say the editor needs the full plugin)" if r.get("viewer_unavailable") else "") + ("" if r["valid"] else "\nWARNING: the written file has problems: " + ", ".join(r["errors"])))
     return 0 if r["valid"] else 1
 
 

@@ -20,6 +20,8 @@ Do not analyse the model or interpret where the texture "should" go. Load the te
 `python scripts/apply_texture.py <model.stl|model.3mf> <texture.png> -o out.3mf`
 It box-projects the texture over every triangle (each triangle uses the box face it points at; one tile = the part's largest dimension, change with `--tile-mm N` only if the user gave a size), keeps the geometry unchanged, writes `out.3mf` (STL cannot hold a texture, so the result is always a 3MF) and `out_viewer.html`, the 3D editor.
 
+If the part is a 3MF that **already has textures**, they are all kept: the file is copied unchanged and the new picture waits in the editor's texture list with no triangles (`apply_texture.py` prints that). Tell the user once: pick the new texture in the list, place it with Paint or Flood, download the 3MF, and upload that file again whenever they want to add another.
+
 **Step 3 - Deliver.** Give the user `out_viewer.html` and `out.3mf`. Say in one line that the texture covers the whole part and that the viewer lets them clear it, then paint or flood-select the triangles they want, move or rotate the projector, switch projection, and download the adjusted 3MF.
 
 ## Rules
